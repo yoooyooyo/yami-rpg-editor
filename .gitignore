@@ -1,0 +1,10 @@
+# ignore
+
+# files
+.DS_Store
+package-lock.json
+config.json
+
+# folders
+node_modules/
+redist/

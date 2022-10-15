@@ -1,0 +1,5 @@
+# http://editorconfig.org
+root = true
+
+[*.js]
+tab_width = 2

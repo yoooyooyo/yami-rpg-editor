@@ -1,0 +1,56 @@
+{
+	"name": "yami-rpg-editor",
+	"version": "1.0.0",
+	"main": "_electron/resources/app/main.js",
+	"productName": "YAMI",
+	"author": "Yami",
+	"description": "2D rpg editor",
+	"scripts": {
+		"start": "electron .",
+		"pack-win": "electron-builder build --win --x64 --ia32",
+		"pack-macos": "electron-builder build --mac --publish never"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/yami-pro/yami-rpg-editor.git"
+	},
+	"dependencies": {},
+	"devDependencies": {
+		"electron": "^18.3.15",
+		"electron-builder": "^22.9.1"
+	},
+	"build": {
+		"appId": "com.yami.rpgeditor",
+		"artifactName": "${productName} ${version} installer.${ext}",
+		"directories": {
+			"buildResources": "Assets",
+			"output": "_electron/resources/app/redist"
+		},
+		"asar": false,
+		"extraFiles": [],
+		"files": [
+			"Fonts",
+			"Images",
+			"Locales",
+			"Script",
+			"commands.json",
+			"default.json",
+			"index.css",
+			"index.html",
+			"_electron/resources/app/main.js",
+			"package.json",
+			"README.md"
+		],
+		"nsis": {
+			"oneClick": true,
+			"shortcutName": "YAMI"
+		},
+		"win": {
+			"target": "nsis",
+			"publish": [
+				"github"
+			]
+		},
+		"mac": {}
+	}
+}
