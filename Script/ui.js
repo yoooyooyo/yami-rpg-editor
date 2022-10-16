@@ -1779,7 +1779,7 @@ UI.datachange = function (event) {
 UI.keydown = function (event) {
   if (UI.state === 'open' &&
     UI.dragging === null) {
-    if (event.ctrlKey) {
+    if (event.cmdOrCtrlKey) {
       return
     } else if (event.altKey) {
       switch (event.code) {
@@ -1833,7 +1833,7 @@ UI.zoomInput = function (event) {
 UI.screenKeydown = function (event) {
   if (this.state === 'open' &&
     this.dragging === null) {
-    if (event.ctrlKey) {
+    if (event.cmdOrCtrlKey) {
       switch (event.code) {
         case 'KeyX':
           this.copy()
@@ -1918,7 +1918,7 @@ UI.screenKeydown = function (event) {
             case 'ArrowRight': offsetX = +1; break
             case 'ArrowDown':  offsetY = +1; break
           }
-          if (event.ctrlKey) {
+          if (event.cmdOrCtrlKey) {
             const ax = Math.roundTo(transform.anchorX - offsetX * 0.5, 4)
             const ay = Math.roundTo(transform.anchorY - offsetY * 0.5, 4)
             return this.shiftAnchor(ax, ay)
@@ -2420,7 +2420,7 @@ UI.menuPopup = function (event) {
     type: 'separator',
   }, {
     label: get('cut'),
-    accelerator: 'Ctrl+X',
+    accelerator: ctrl('X'),
     enabled: selected,
     click: () => {
       this.copy()
@@ -2428,14 +2428,14 @@ UI.menuPopup = function (event) {
     },
   }, {
     label: get('copy'),
-    accelerator: 'Ctrl+C',
+    accelerator: ctrl('C'),
     enabled: selected,
     click: () => {
       this.copy()
     },
   }, {
     label: get('paste'),
-    accelerator: 'Ctrl+V',
+    accelerator: ctrl('V'),
     enabled: pastable,
     click: () => {
       this.paste(x, y)
@@ -2470,7 +2470,7 @@ UI.listKeydown = function (event) {
     return
   }
   const item = this.read()
-  if (event.ctrlKey) {
+  if (event.cmdOrCtrlKey) {
     switch (event.code) {
       case 'KeyX':
         if (item) {
@@ -2672,7 +2672,7 @@ UI.listPopup = function (event) {
     type: 'separator',
   }, {
     label: get('cut'),
-    accelerator: 'Ctrl+X',
+    accelerator: ctrl('X'),
     enabled: copyable,
     click: () => {
       this.copy(item)
@@ -2680,14 +2680,14 @@ UI.listPopup = function (event) {
     },
   }, {
     label: get('copy'),
-    accelerator: 'Ctrl+C',
+    accelerator: ctrl('C'),
     enabled: copyable,
     click: () => {
       this.copy(item)
     },
   }, {
     label: get('paste'),
-    accelerator: 'Ctrl+V',
+    accelerator: ctrl('V'),
     enabled: pastable,
     click: () => {
       this.paste(item)

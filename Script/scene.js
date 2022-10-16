@@ -5774,7 +5774,7 @@ Scene.datachange = function (event) {
 Scene.keydown = function (event) {
   if (Scene.state === 'open' &&
     Scene.dragging === null) {
-    if (event.ctrlKey) {
+    if (event.cmdOrCtrlKey) {
       return
     } else if (event.altKey) {
       switch (event.code) {
@@ -5916,7 +5916,7 @@ Scene.screenKeydown = function (event) {
   if (this.state === 'open' && (
     this.dragging === null ||
     event.code === 'ShiftLeft')) {
-    if (event.ctrlKey) {
+    if (event.cmdOrCtrlKey) {
       switch (event.code) {
         case 'KeyX':
           this.copy()
@@ -6180,7 +6180,7 @@ Scene.marqueePointerdown = function (event) {
   }
   switch (event.button) {
     case 0: {
-      if (event.altKey) {
+      if (event.dragKey) {
         this.dragging = event
         event.mode = 'scroll'
         event.scrollLeft = this.screen.scrollLeft
@@ -6249,7 +6249,7 @@ Scene.marqueePointerdown = function (event) {
         case 'object': {
           const {x, y} = this.getTileCoords(event)
           let object
-          if (event.ctrlKey) {
+          if (event.cmdOrCtrlKey) {
             switch (this.target?.class) {
               case 'tilemap':
               case 'actor':
@@ -6743,7 +6743,7 @@ Scene.menuPopup = function (event) {
       type: 'separator',
     }, {
       label: get('cut'),
-      accelerator: 'Ctrl+X',
+      accelerator: ctrl('X'),
       enabled: selected,
       click: () => {
         this.copy()
@@ -6751,14 +6751,14 @@ Scene.menuPopup = function (event) {
       },
     }, {
       label: get('copy'),
-      accelerator: 'Ctrl+C',
+      accelerator: ctrl('C'),
       enabled: selected,
       click: () => {
         this.copy()
       },
     }, {
       label: get('paste'),
-      accelerator: 'Ctrl+V',
+      accelerator: ctrl('V'),
       enabled: pastable,
       click: () => {
         this.paste(x, y)
@@ -6801,7 +6801,7 @@ Scene.listKeydown = function (event) {
   }
   const item = this.read()
   const isFile = item && item.class !== 'folder'
-  if (event.ctrlKey) {
+  if (event.cmdOrCtrlKey) {
     switch (event.code) {
       case 'KeyX':
         if (isFile) {
@@ -7079,7 +7079,7 @@ Scene.listPopup = function (event) {
     type: 'separator',
   }, {
     label: get('cut'),
-    accelerator: 'Ctrl+X',
+    accelerator: ctrl('X'),
     enabled: copyable,
     click: () => {
       this.copy(item)
@@ -7087,14 +7087,14 @@ Scene.listPopup = function (event) {
     },
   }, {
     label: get('copy'),
-    accelerator: 'Ctrl+C',
+    accelerator: ctrl('C'),
     enabled: copyable,
     click: () => {
       this.copy(item)
     },
   }, {
     label: get('paste'),
-    accelerator: 'Ctrl+V',
+    accelerator: ctrl('V'),
     enabled: pastable,
     click: () => {
       this.paste(item)

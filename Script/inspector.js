@@ -259,7 +259,7 @@ Inspector.managerKeydown = function (event) {
     case 'TEXTAREA':
       // 如果是滑动框类型则跳到default
       if (element.type !== 'range') {
-        if (event.ctrlKey) {
+        if (event.cmdOrCtrlKey) {
           switch (event.code) {
             case 'KeyS':
               break
@@ -283,7 +283,7 @@ Inspector.managerKeydown = function (event) {
         break
       }
     default:
-      if (event.ctrlKey) {
+      if (event.cmdOrCtrlKey) {
         switch (event.code) {
           case 'KeyZ':
           case 'KeyY':

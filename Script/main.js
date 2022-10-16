@@ -267,7 +267,7 @@ Editor.updatePath = function (path) {
 // 开关快捷键
 Editor.switchHotkey = function IIFE() {
   const keydown = function (event) {
-    if (event.ctrlKey) {
+    if (event.cmdOrCtrlKey) {
       switch (event.code) {
         case 'KeyN':
         case 'KeyO':

@@ -434,7 +434,7 @@ Attribute.windowClosed = function (event) {
 
 // 键盘按下事件
 Attribute.keydown = function (event) {
-  if (event.ctrlKey) {
+  if (event.cmdOrCtrlKey) {
     switch (event.code) {
       case 'KeyZ':
         return Attribute.undo()
@@ -447,7 +447,7 @@ Attribute.keydown = function (event) {
 // 列表 - 键盘按下事件
 Attribute.listKeydown = function (event) {
   const item = this.read()
-  if (event.ctrlKey) {
+  if (event.cmdOrCtrlKey) {
     switch (event.code) {
       case 'KeyC':
         this.copy(item)
@@ -577,14 +577,14 @@ Attribute.listPopup = function (event) {
     }],
   }, {
     label: get('copy'),
-    accelerator: 'Ctrl+C',
+    accelerator: ctrl('C'),
     enabled: copyable,
     click: () => {
       this.copy(item)
     },
   }, {
     label: get('paste'),
-    accelerator: 'Ctrl+V',
+    accelerator: ctrl('V'),
     enabled: pastable,
     click: () => {
       this.paste(item)
@@ -605,14 +605,14 @@ Attribute.listPopup = function (event) {
     },
   }, {
     label: get('undo'),
-    accelerator: 'Ctrl+Z',
+    accelerator: ctrl('Z'),
     enabled: undoable,
     click: () => {
       Attribute.undo()
     },
   }, {
     label: get('redo'),
-    accelerator: 'Ctrl+Y',
+    accelerator: ctrl('Y'),
     enabled: redoable,
     click: () => {
       Attribute.redo()
@@ -701,7 +701,7 @@ Attribute.panelKeydown = function (event) {
   switch (event.target.tagName) {
     case 'INPUT':
     case 'TEXTAREA':
-      if (event.ctrlKey) {
+      if (event.cmdOrCtrlKey) {
         switch (event.code) {
           case 'Enter':
           case 'NumpadEnter':
