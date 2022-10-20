@@ -485,7 +485,7 @@ class Printer {
     while (this.index < length) {
       // 匹配标签
       const char = content[this.index]
-      if (char === '<' && this.matchTag() === true) {
+      if (char === '<' && this.matchTag()) {
         continue
       }
 
@@ -719,6 +719,7 @@ class Printer {
       this.index += match[0].length
       return true
     }
+    return false
   }
 
   // 静态属性

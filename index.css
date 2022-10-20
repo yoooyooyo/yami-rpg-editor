@@ -3231,15 +3231,6 @@ file-body-content.huge > file-body-item > file-body-icon.icon-file-other {
   justify-content: flex-end;
 }
 
-#title-directory {
-  width: 44px;
-  height: 24px;
-  line-height: 24px;
-  text-align: center;
-  /* font-size: 14px; */
-  font-family: var(--font-family-symbol);
-}
-
 #title-play {
   width: 44px;
   height: 24px;
@@ -3249,22 +3240,18 @@ file-body-content.huge > file-body-item > file-body-icon.icon-file-other {
   font-family: var(--font-family-symbol);
 }
 
-#title-directory:hover,
 #title-play:hover {
   background-color: var(--titlebar-button-background-hover);
 }
 
-#title-directory:active,
 #title-play:active {
   background-color: var(--titlebar-button-background-active);
 }
 
-#title-directory.selected,
 #title-play.selected {
   color: var(--toolbar-item-color-highlight);
 }
 
-#title-directory,
 #title-play,
 #title-minimize,
 #title-maximize,
@@ -6553,6 +6540,25 @@ nav-item[value=particle].selected {
 }
 
 #showText-cancel {
+  right: 10px;
+  bottom: 10px;
+}
+
+/* --------------------------------
+ * 显示选项
+ * --------------------------------
+ */
+ #showChoices {
+  width: 400px;
+  height: 190px;
+}
+
+#showChoices-confirm {
+  right: 108px;
+  bottom: 10px;
+}
+
+#showChoices-cancel {
   right: 10px;
   bottom: 10px;
 }

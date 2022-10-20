@@ -2250,9 +2250,7 @@ Animation.loadTextures = function () {
       continue
     }
     if (imageId) {
-      const texture = new ImageTexture(imageId, {
-        wrap: GL.CLAMP_TO_EDGE,
-      })
+      const texture = new ImageTexture(imageId)
       texture.on('load', () => {
         if (player.textures === textures) {
           const {base} = texture
@@ -3051,8 +3049,8 @@ Animation.drawImageControlPoints = function () {
     ).multiply(Animation.matrix)
     gl.bindVertexArray(program.vao)
     gl.uniformMatrix3fv(program.u_Matrix, false, matrix)
-    gl.uniform1ui(program.u_LightMode, 0)
-    gl.uniform1ui(program.u_ColorMode, 0)
+    gl.uniform1i(program.u_LightMode, 0)
+    gl.uniform1i(program.u_ColorMode, 0)
     gl.uniform4f(program.u_Tint, 0, 0, 0, 0)
     gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STREAM_DRAW, 0, vi)
     gl.bindTexture(gl.TEXTURE_2D, texture.base)
@@ -6165,9 +6163,7 @@ Animation.Player = class AnimationPlayer {
       const sprite = this.sprites[spriteId]
       const imageId = this.images[spriteId]
       if (sprite !== undefined && imageId) {
-        const texture = new ImageTexture(imageId, {
-          wrap: GL.CLAMP_TO_EDGE,
-        })
+        const texture = new ImageTexture(imageId)
         textures[spriteId] = null
         texture.on('load', () => {
           if (this.textures === textures) {

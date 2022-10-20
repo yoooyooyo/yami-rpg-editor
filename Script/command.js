@@ -972,6 +972,99 @@ Command.cases.showText = {
   }(),
 }
 
+// 显示选项
+Command.cases.showChoices = {
+  initialize: function () {
+    $('#showChoices-confirm').on('click', this.save)
+
+    // 清理内存 - 窗口已关闭事件
+    $('#showChoices').on('closed', event => {
+      this.choices = null
+    })
+  },
+  choices: null,
+  parse: function ({choices, parameters}) {
+    const contents = [
+      {color: 'flow'},
+      {text: Local.get('command.showChoices') + ': '},
+      {color: 'text'},
+    ]
+    // 添加选项内容
+    const words = Command.words
+    for (const choice of choices) {
+      words.push(choice.content)
+    }
+    contents.push(
+      {text: words.join()}
+    )
+    // 添加参数内容
+    if (parameters) {
+      contents.push(
+        {color: 'gray'},
+        {text: ` (${parameters})`},
+      )
+    }
+    contents.push({color: 'flow'})
+    // 换行
+    contents.push({break: true})
+    // 添加选项分支内容
+    const when = Local.get('command.showChoices.when')
+    for (const choice of choices) {
+      contents.push(
+        {color: 'flow'},
+        {text: when + ' '},
+        {color: 'text'},
+        {text: choice.content},
+        {children: choice.commands},
+      )
+    }
+    contents.push({text: Local.get('command.showChoices.end')})
+    return contents
+  },
+  createDefaultChoices: function () {
+    return [{
+      content: 'Yes',
+      commands: [],
+    },
+    {
+      content: 'No',
+      commands: [],
+    }]
+  },
+  load: function ({
+    choices     = this.createDefaultChoices(),
+    parameters  = '',
+  }) {
+    const write = getElementWriter('showChoices')
+    write('choices-0', choices[0]?.content ?? '')
+    write('choices-1', choices[1]?.content ?? '')
+    write('choices-2', choices[2]?.content ?? '')
+    write('choices-3', choices[3]?.content ?? '')
+    write('parameters', parameters)
+    Command.cases.showChoices.choices = choices
+    $('#showChoices-choices-0').getFocus()
+  },
+  save: function () {
+    const read = getElementReader('showChoices')
+    const choices = []
+    for (let i = 0; i < 4; i++) {
+      const content = read('choices-' + i)
+      if (content) {
+        choices.push({
+          content: content,
+          // 继承上一次的事件指令列表
+          commands: Command.cases.showChoices.choices[i]?.commands ?? []
+        })
+      }
+    }
+    if (choices.length === 0) {
+      return $('#showChoices-choices-0').getFocus()
+    }
+    const parameters = read('parameters')
+    Command.save({choices, parameters})
+  },
+}
+
 // 注释
 Command.cases.comment = {
   initialize: function () {
@@ -2368,6 +2461,15 @@ Command.cases.setEvent = {
       {name: 'Enable', value: 'enable'},
       {name: 'Disable', value: 'disable'},
       {name: 'Set to Highest Priority', value: 'highest-priority'},
+      {name: 'Go to Choice Branch', value: 'goto-choice-branch'},
+    ])
+
+    // 创建选择分支选项
+    $('#setEvent-choiceIndex').loadItems([
+      {name: 'Choice #1', value: 0},
+      {name: 'Choice #2', value: 1},
+      {name: 'Choice #3', value: 2},
+      {name: 'Choice #4', value: 3},
     ])
 
     // 设置操作关联元素
@@ -2378,9 +2480,12 @@ Command.cases.setEvent = {
       {case: ['enable', 'disable', 'highest-priority'], targets: [
         $('#setEvent-eventId'),
       ]},
+      {case: 'goto-choice-branch', targets: [
+        $('#setEvent-choiceIndex'),
+      ]},
     ])
   },
-  parse: function ({operation, variable, eventId}) {
+  parse: function ({operation, variable, eventId, choiceIndex}) {
     const words = Command.words
     .push(Local.get('command.setEvent.' + operation))
     switch (operation) {
@@ -2393,6 +2498,9 @@ Command.cases.setEvent = {
       case 'highest-priority':
         words.push(Command.parseFileName(eventId))
         break
+      case 'goto-choice-branch':
+        words.push(`#${choiceIndex + 1}`)
+        break
     }
     return [
       {color: 'flow'},
@@ -2401,14 +2509,16 @@ Command.cases.setEvent = {
     ]
   },
   load: function ({
-    operation = 'stop',
-    variable  = {type: 'global', key: ''},
-    eventId   = '',
+    operation   = 'stop',
+    variable    = {type: 'global', key: ''},
+    eventId     = '',
+    choiceIndex = 0,
   }) {
     const write = getElementWriter('setEvent')
     write('operation', operation)
     write('variable', variable)
     write('eventId', eventId)
+    write('choiceIndex', choiceIndex)
     $('#setEvent-operation').getFocus()
   },
   save: function () {
@@ -2436,6 +2546,11 @@ Command.cases.setEvent = {
           return $('#setEvent-eventId').getFocus()
         }
         Command.save({operation, eventId})
+        break
+      }
+      case 'goto-choice-branch': {
+        const choiceIndex = read('choiceIndex')
+        Command.save({operation, choiceIndex})
         break
       }
     }
@@ -8367,9 +8482,8 @@ EventEditor.windowResize = function (event) {
 
 // 数据 - 改变事件
 EventEditor.dataChange = function (event) {
-  this.changed = true
-  console.log(event)
-}.bind(EventEditor)
+  EventEditor.changed = true
+}
 
 // 指令列表 - 更新事件
 EventEditor.listUpdate = function (event) {
@@ -9407,6 +9521,13 @@ StringOperand.initialize = function () {
     {name: 'Event Trigger Key', value: 'trigger-key'},
     {name: 'Parse Timestamp', value: 'parse-timestamp'},
     {name: 'Screenshot(Base64)', value: 'screenshot'},
+    {name: 'ShowText Parameters', value: 'showText-parameters'},
+    {name: 'ShowText Content', value: 'showText-content'},
+    {name: 'ShowChoices Parameters', value: 'showChoices-parameters'},
+    {name: 'ShowChoices Content 1', value: 'showChoices-content-0'},
+    {name: 'ShowChoices Content 2', value: 'showChoices-content-1'},
+    {name: 'ShowChoices Content 3', value: 'showChoices-content-2'},
+    {name: 'ShowChoices Content 4', value: 'showChoices-content-3'},
   ])
 
   // 设置其他数据关联元素
@@ -9498,6 +9619,13 @@ StringOperand.parseOther = function (operand) {
   const label = Local.get('command.setString.other.' + operand.data)
   switch (operand.data) {
     case 'trigger-key':
+    case 'showText-parameters':
+    case 'showText-content':
+    case 'showChoices-parameters':
+    case 'showChoices-content-0':
+    case 'showChoices-content-1':
+    case 'showChoices-content-2':
+    case 'showChoices-content-3':
       return label
     case 'parse-timestamp': {
       const variable = Command.parseVariable(operand.variable)

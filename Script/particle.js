@@ -2039,7 +2039,7 @@ Particle.Layer = class ParticleLayer {
       gl.uniformMatrix3fv(program.u_Matrix, false, matrix)
       switch (data.color.mode) {
         default:
-          gl.uniform1ui(program.u_Mode, 0)
+          gl.uniform1i(program.u_Mode, 0)
           break
         case 'texture': {
           const tint = data.color.tint
@@ -2047,7 +2047,7 @@ Particle.Layer = class ParticleLayer {
           const green = tint[1] / 255
           const blue = tint[2] / 255
           const gray = tint[3] / 255
-          gl.uniform1ui(program.u_Mode, 1)
+          gl.uniform1i(program.u_Mode, 1)
           gl.uniform4f(program.u_Tint, red, green, blue, gray)
           break
         }
@@ -2092,9 +2092,7 @@ Particle.Layer = class ParticleLayer {
       this.unitHeight = 0
     }
     if (guid) {
-      const texture = new ImageTexture(guid, {
-        wrap: GL.CLAMP_TO_EDGE,
-      })
+      const texture = new ImageTexture(guid)
       if (texture.complete) {
         this.texture = texture
         this.calculateElementSize()

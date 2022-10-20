@@ -1609,8 +1609,8 @@ UI.drawControlPoints = function () {
     ).multiply(UI.matrix)
     gl.bindVertexArray(program.vao)
     gl.uniformMatrix3fv(program.u_Matrix, false, matrix)
-    gl.uniform1ui(program.u_LightMode, 0)
-    gl.uniform1ui(program.u_ColorMode, 0)
+    gl.uniform1i(program.u_LightMode, 0)
+    gl.uniform1i(program.u_ColorMode, 0)
     gl.uniform4f(program.u_Tint, 0, 0, 0, 0)
     gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STREAM_DRAW, 0, vi)
     gl.bindTexture(gl.TEXTURE_2D, texture.base)
@@ -4221,10 +4221,10 @@ UI.ProgressBar = class ProgressBarElement extends UI.Element {
       const program = GL.imageProgram.use()
       GL.bindVertexArray(program.vao)
       GL.uniformMatrix3fv(program.u_Matrix, false, GL.matrix)
-      GL.uniform1ui(program.u_LightMode, 0)
+      GL.uniform1i(program.u_LightMode, 0)
       switch (this.colorMode) {
         case 'texture':
-          GL.uniform1ui(program.u_ColorMode, 0)
+          GL.uniform1i(program.u_ColorMode, 0)
           GL.uniform4f(program.u_Tint, 0, 0, 0, 0)
           break
         case 'fixed': {
@@ -4233,7 +4233,7 @@ UI.ProgressBar = class ProgressBarElement extends UI.Element {
           const green = color[1] / 255
           const blue = color[2] / 255
           const alpha = color[3] / 255
-          GL.uniform1ui(program.u_ColorMode, 1)
+          GL.uniform1i(program.u_ColorMode, 1)
           GL.uniform4f(program.u_Color, red, green, blue, alpha)
           break
         }

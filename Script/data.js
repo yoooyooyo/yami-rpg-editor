@@ -275,7 +275,7 @@ Data.createVariableMap = function IIFE() {
       if (item.children) {
         set(item.children, map)
       } else {
-        map[item[0]] = item
+        map[item.id] = item
       }
     }
   }
@@ -727,8 +727,7 @@ Project.initialize = function () {
     #config-lightArea-expansionRight, #config-lightArea-expansionBottom,
     #config-collision-actor-enabled, #config-collision-scene-enabled, #config-collision-scene-size,
     #config-font-default, #config-font-pixelated, #config-font-threshold,
-    #config-startup-eventId, #config-showText-eventId,
-    #config-showText-parameterKey, #config-showText-contentKey,
+    #config-event-startup, #config-event-showText, #config-event-showChoices,
     #config-actor-playerTeam, #config-actor-playerActor,
     #config-actor-partyMembers-0, #config-actor-partyMembers-1,
     #config-actor-partyMembers-2, #config-actor-partyMembers-3,
@@ -778,10 +777,9 @@ Project.open = function () {
   write('font-default')
   write('font-pixelated')
   write('font-threshold')
-  write('startup-eventId')
-  write('showText-eventId')
-  write('showText-parameterKey')
-  write('showText-contentKey')
+  write('event-startup')
+  write('event-showText')
+  write('event-showChoices')
   write('actor-playerTeam')
   write('actor-playerActor')
   write('actor-partyMembers-0')

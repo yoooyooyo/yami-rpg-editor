@@ -678,6 +678,7 @@ class WindowFrame extends HTMLElement {
       }
       if (this.resizeEventEnabled &&
         this.hasClass('maximized')) {
+        this.dispatchEvent(new Event('resize'))
         window.on('resize', this.windowResize)
       }
     }
@@ -5299,14 +5300,17 @@ class TabBar extends HTMLElement {
       if (tab === undefined) {
         tab = item.tab = document.createElement('tab-item')
         const text = document.createElement('tab-text')
-        const mark = document.createElement('tab-close')
         text.textContent = this.parseTabName(item)
-        mark.textContent = '\u2716'
         tab.draggable = true
         tab.item = item
         tab.text = text
         tab.appendChild(text)
-        tab.appendChild(mark)
+        // 给目录以外的标签添加关闭按钮
+        if (item.type !== 'directory') {
+          const mark = document.createElement('tab-close')
+          mark.textContent = '\u2716'
+          tab.appendChild(mark)
+        }
       }
       this.appendChild(tab)
     }
@@ -5348,6 +5352,7 @@ class TabBar extends HTMLElement {
 
   // 关闭项目
   close(item) {
+    if (item === this.dirItem) return
     const value = this.read()
     if (this.data.remove(item)) {
       this.update()
@@ -5374,12 +5379,21 @@ class TabBar extends HTMLElement {
   closeOtherTabs(item) {
     const value = this.read()
     const items = this.data
-    if (items.length > 1 && items.remove(item)) {
-      this.data = [item]
+    let i = items.length
+    if (i <= 1) return
+    const closedItems = []
+    while (--i >= 0) {
+      const tab = items[i]
+      if (tab === item) continue
+      if (tab === this.dirItem) continue
+      items.splice(i, 1)
+      closedItems.push(tab)
+    }
+    if (closedItems.length !== 0) {
       this.update()
       if (this.closedEventEnabled) {
         const closed = new Event('closed')
-        closed.closedItems = items
+        closed.closedItems = closedItems
         closed.lastValue = value
         this.dispatchEvent(closed)
       }
@@ -5391,12 +5405,20 @@ class TabBar extends HTMLElement {
     const value = this.read()
     const items = this.data
     const index = items.indexOf(item)
-    if (index !== -1 && index < items.length - 1) {
-      this.data = items.slice(0, index + 1)
+    if (index === -1) return
+    const closedItems = []
+    let i = items.length
+    while (--i > index) {
+      const tab = items[i]
+      if (tab === this.dirItem) continue
+      items.splice(i, 1)
+      closedItems.push(tab)
+    }
+    if (closedItems.length !== 0) {
       this.update()
       if (this.closedEventEnabled) {
         const closed = new Event('closed')
-        closed.closedItems = items.slice(index + 1)
+        closed.closedItems = closedItems
         closed.lastValue = value
         this.dispatchEvent(closed)
       }
