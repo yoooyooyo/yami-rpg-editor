@@ -2030,6 +2030,9 @@ Menubar.keydown = function (event) {
       case 'KeyF':
         Palette.flipTiles()
         break
+      case 'Pause':
+        GL.WEBGL_lose_context.loseContext()
+        break
     }
   }
 }

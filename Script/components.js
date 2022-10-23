@@ -2870,6 +2870,7 @@ class SliderBox extends HTMLElement {
   filler            //:element
   input             //:element
   synchronizer      //:element
+  activeWheel       //:boolean
   focusEventEnabled //:boolean
   blurEventEnabled  //:boolean
 
@@ -2903,6 +2904,7 @@ class SliderBox extends HTMLElement {
     this.filler = filler
     this.input = input
     this.synchronizer = null
+    this.activeWheel = this.hasAttribute('active-wheel')
     this.focusEventEnabled = false
     this.blurEventEnabled = false
 
@@ -3038,10 +3040,10 @@ class SliderBox extends HTMLElement {
 
   // 输入框 - 鼠标滚轮事件
   inputWheel(event) {
-    if (event.deltaY !== 0) {
+    if (event.deltaY === 0) return
+    if (document.activeElement === this || this.parentNode.activeWheel) {
       // 阻止滚动页面的默认行为
       event.preventDefault()
-      event.target.focus()
       const input = this
       const last = input.value
       input.value = Math.roundTo(
@@ -10275,6 +10277,9 @@ class CommandList extends HTMLElement {
         case 'KeyY':
           this.redo()
           break
+        case 'Slash':
+          this.toggle()
+          break
         case 'ArrowUp':
           this.scrollTop -= 20
           break
@@ -10339,7 +10344,7 @@ class CommandList extends HTMLElement {
           this.insert()
           break
         case 'Slash':
-          this.toggle()
+          this.insert('comment')
           break
         case 'Backslash':
           this.insert('script')
@@ -10492,10 +10497,17 @@ class CommandList extends HTMLElement {
             },
           }, {
             label: get('toggle'),
-            accelerator: '/',
+            accelerator: ctrl('/'),
             enabled: pEnabled && valid,
             click: () => {
               this.toggle()
+            },
+          }, {
+            label: get('comment'),
+            accelerator: '/',
+            enabled: pEnabled,
+            click: () => {
+              this.insert('comment')
             },
           }, {
             label: get('script'),
@@ -12734,6 +12746,10 @@ class FileHeadPane extends HTMLElement {
 
     // 设置属性
     this.address = document.createElement('file-head-address')
+    this.back = document.createElement('item')
+    this.back.addClass('upper-level-directory')
+    this.back.name = 'back'
+    this.back.textContent = '\uf0a8'
     this.searcher = new TextBox()
     this.searcher.addCloseButton()
     this.searcher.addClass('file-head-searcher')
@@ -12742,13 +12758,16 @@ class FileHeadPane extends HTMLElement {
     this.view.addClass('file-head-view')
     this.view.name = 'view'
     this.view.input.max = '4'
+    this.view.activeWheel = true
     this.appendChild(this.address)
+    this.appendChild(this.back)
     this.appendChild(this.searcher)
     this.appendChild(this.view)
 
     // 侦听事件
     this.on('pointerdown', this.pointerdown)
     this.address.on('pointerdown', this.addressPointerdown)
+    this.back.on('click', this.backButtonClick)
     this.searcher.on('input', this.searcherInput)
     this.searcher.on('compositionend', this.searcherInput)
     this.view.on('focus', this.viewFocus)
@@ -12884,6 +12903,13 @@ class FileHeadPane extends HTMLElement {
         break
       }
     }
+  }
+
+  // 返回按钮 - 鼠标点击事件
+  backButtonClick(event) {
+    const head = this.parentNode
+    const {browser} = head.links
+    browser.backToParentFolder()
   }
 
   // 搜索框 - 输入事件

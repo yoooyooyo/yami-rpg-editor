@@ -96,6 +96,7 @@ const Particle = {
   saveToProject: null,
   loadFromProject: null,
   // events
+  webglRestored: null,
   windowResize: null,
   themechange: null,
   datachange: null,
@@ -230,6 +231,7 @@ Particle.initialize = function () {
   window.on('keydown', this.keydown)
   this.page.on('resize', this.windowResize)
   this.head.on('pointerdown', this.headPointerdown)
+  GL.canvas.on('webglcontextrestored', this.webglRestored)
   $('#particle-head-start').on('pointerdown', this.viewPointerdown)
   $('#particle-control').on('pointerdown', this.controlPointerdown)
   $('#particle-speed').on('input', this.speedInput)
@@ -1138,6 +1140,13 @@ Particle.loadFromProject = function (project) {
   this.switchAnchor(particle.anchor)
   this.setSpeed(particle.speed)
   this.setZoom(particle.zoom)
+}
+
+// WebGL - 上下文恢复事件
+Particle.webglRestored = function (event) {
+  if (Particle.state === 'open') {
+    Particle.requestRendering()
+  }
 }
 
 // 窗口 - 调整大小事件
@@ -2053,7 +2062,7 @@ Particle.Layer = class ParticleLayer {
         }
       }
       gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STREAM_DRAW, 0, vi)
-      gl.bindTexture(gl.TEXTURE_2D, texture.base)
+      gl.bindTexture(gl.TEXTURE_2D, texture.base.glTexture)
       gl.drawElements(gl.TRIANGLES, vi / 20 * 6, gl.UNSIGNED_INT, 0)
       // 重置混合模式
       gl.blend = 'normal'

@@ -141,7 +141,7 @@
           </box>
         </box>
         <box id='scene-head-end'>
-          <slider-box id='scene-zoom' name='zoom' min='0' max='4'></slider-box>
+          <slider-box id='scene-zoom' name='zoom' min='0' max='4' active-wheel></slider-box>
         </box>
       </box>
       <box id='scene-body'>
@@ -177,7 +177,7 @@
           <item id='ui-element-container' class='toolbar-item' value='container'></item>
         </box>
         <box id='ui-head-end'>
-          <slider-box id='ui-zoom' name='zoom' min='0' max='4'></slider-box>
+          <slider-box id='ui-zoom' name='zoom' min='0' max='4' active-wheel></slider-box>
         </box>
       </box>
       <box id='ui-body'>
@@ -208,7 +208,7 @@
           <number-box id='animation-speed' min='0' max='4' step='0.05' decimals='2'><text class='label'>speed:</text></number-box>
         </box>
         <box id='animation-head-end'>
-          <slider-box id='animation-zoom' name='zoom' min='0' max='4'></slider-box>
+          <slider-box id='animation-zoom' name='zoom' min='0' max='4' active-wheel></slider-box>
         </box>
       </box>
       <box id='animation-body'>
@@ -280,7 +280,7 @@
           <number-box id='particle-duration' min='0' max='60000' unit='ms'><text class='label'>duration:</text></number-box>
         </box>
         <box id='particle-head-end'>
-          <slider-box id='particle-zoom' name='zoom' min='0' max='4'></slider-box>
+          <slider-box id='particle-zoom' name='zoom' min='0' max='4' active-wheel></slider-box>
         </box>
       </box>
       <box id='particle-body'>
@@ -2433,6 +2433,18 @@
   </content-frame>
 </window-frame>
 
+<!-- 设置键窗口 -->
+<window-frame id='setKey'>
+  <title-bar>Set Key<close></close></title-bar>
+  <content-frame>
+    <grid-box>
+      <text>Key</text><text-box id='setKey-key'></text-box>
+    </grid-box>
+    <button id='setKey-confirm' name='confirm'>Confirm</button>
+    <button id='setKey-cancel' name='cancel'>Cancel</button>
+  </content-frame>
+</window-frame>
+
 <!-- 设置数量窗口 -->
 <window-frame id='setQuantity'>
   <title-bar>Set Quantity<close></close></title-bar>
@@ -2793,19 +2805,7 @@
   <content-frame>
     <grid-box>
       <text>Variable</text><custom-box id='setString-variable' type='variable' filter='writable-string'></custom-box>
-      <text>Expression</text><param-list id='setString-operands'></param-list>
-    </grid-box>
-    <button id='setString-confirm' name='confirm'>Confirm</button>
-    <button id='setString-cancel' name='cancel'>Cancel</button>
-  </content-frame>
-</window-frame>
-
-<!-- 设置字符串 - 操作数 -->
-<window-frame id='setString-operand'>
-  <title-bar>String Operand<close></close></title-bar>
-  <content-frame>
-    <grid-box>
-      <text>Operation</text><select-box id='setString-operation'></select-box><select-box id='setString-operand-operation'></select-box>
+      <text>Operation</text><select-box id='setString-operation'></select-box>
       <text>Type</text><select-box id='setString-operand-type'></select-box>
       <text>Constant</text><text-area id='setString-operand-constant-value'></text-area>
       <text>String Method</text><select-box id='setString-operand-string-method'></select-box>
@@ -2835,8 +2835,8 @@
       <text>Image Width</text><number-box id='setString-operand-screenshot-width' min='64' max='3840' unit='px'></number-box>
       <text>Image Height</text><number-box id='setString-operand-screenshot-height' min='64' max='3840' unit='px'></number-box>
     </grid-box>
-    <button id='setString-operand-confirm' name='confirm'>Confirm</button>
-    <button id='setString-operand-cancel' name='cancel'>Cancel</button>
+    <button id='setString-confirm' name='confirm'>Confirm</button>
+    <button id='setString-cancel' name='cancel'>Cancel</button>
   </content-frame>
 </window-frame>
 

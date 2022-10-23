@@ -231,6 +231,7 @@ const Scene = {
   saveToProject: null,
   loadFromProject: null,
   // events
+  webglRestored: null,
   windowResize: null,
   themechange: null,
   dprchange: null,
@@ -652,6 +653,7 @@ Scene.initialize = function () {
   window.on('keydown', this.keydown)
   this.page.on('resize', this.windowResize)
   this.head.on('pointerdown', this.headPointerdown)
+  GL.canvas.on('webglcontextrestored', this.webglRestored)
   $('#scene-head-start').on('pointerdown', this.switchPointerdown)
   $('#scene-layer').on('pointerdown', this.layerPointerdown)
   $('#scene-brush').on('pointerdown', this.brushPointerdown)
@@ -4094,7 +4096,7 @@ Scene.createStartPositionTexture = function () {
     context.fillText('\uf041', 128, y)
     texture = new Texture()
     texture.fromImage(canvas)
-    texture.protectBaseTexture()
+    texture.base.protected = true
     this.startPositionTexture = texture
   }
   return texture
@@ -4149,7 +4151,7 @@ Scene.drawStartPosition = function () {
       gl.uniform1i(program.u_ColorMode, 0)
       gl.uniform4f(program.u_Tint, 0, 0, 0, 0)
       gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STREAM_DRAW, 0, 16)
-      gl.bindTexture(gl.TEXTURE_2D, texture.base)
+      gl.bindTexture(gl.TEXTURE_2D, texture.base.glTexture)
       gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_INT, 0)
     }
   }
@@ -5107,28 +5109,29 @@ Scene.setTile = function (sTiles, sx, sy, dx, dy) {
   const si = sx + sy * sro
   const di = dx + dy * dro
   const sTile = sTiles[si]
-  if (dTiles[di] !== sTile) {
-    const sMap = this.marquee.tilesetMap
-    const dMap = tilemap.tilesetMap
-    const rMap = tilemap.reverseMap
-    if (sTile === 0) {
+  const dTile = dTiles[di]
+  if (sTile === 0) {
+    if (dTile !== 0) {
       this.recordMapData(di)
       dTiles[di] = 0
-      return
     }
-    const guid = sMap[sTile >> 24]
-    let index = rMap[guid]
-    if (index === undefined) {
-      index = this.getNewTilesetIndex(dMap)
-      if (index === 0) return
-      dMap[index] = guid
-      rMap[guid] = index
-    }
-    const nTile = sTile & 0xffffff | index << 24
-    if (dTiles[di] !== nTile) {
-      this.recordMapData(di)
-      dTiles[di] = nTile
-    }
+    return
+  }
+  const sMap = this.marquee.tilesetMap
+  const rMap = tilemap.reverseMap
+  const guid = sMap[sTile >> 24]
+  let index = rMap[guid]
+  if (index === undefined) {
+    const dMap = tilemap.tilesetMap
+    index = this.getNewTilesetIndex(dMap)
+    if (index === 0) return
+    dMap[index] = guid
+    rMap[guid] = index
+  }
+  const nTile = sTile & 0xffffff | index << 24
+  if (dTile !== nTile) {
+    this.recordMapData(di)
+    dTiles[di] = nTile
   }
 }
 
@@ -5651,7 +5654,7 @@ Scene.createDefaultAnimation = function IIFE() {
     texture.height = height
     texture.offsetX = -width / 2
     texture.offsetY = -height / 2
-    texture.protectBaseTexture()
+    texture.base.protected = true
   })
 
   // 返回函数
@@ -5661,13 +5664,13 @@ Scene.createDefaultAnimation = function IIFE() {
       motion = Inspector.animMotion.create()
       data = {sprites: [], motions: [motion]}
       const frames = motion.layers[0].frames
-      frames[0][4] = -8
-      frames[0][6] = 0.25
-      frames[0][7] = 0.25
-      frames[1] = frames[0].slice()
-      frames[1][0] = 1
-      frames[1][1] = 2
-      frames[1][10] = 1
+      frames[0].y = -8
+      frames[0].scaleX = 0.25
+      frames[0].scaleY = 0.25
+      frames[1] = Object.clone(frames[0])
+      frames[1].start = 1
+      frames[1].end = 2
+      frames[1].spriteY = 1
       DefaultPlayer = class DefaultPlayer extends Animation.Player {
         constructor(target) {
           super(data)
@@ -5726,6 +5729,13 @@ Scene.loadFromProject = function (project) {
   this.switchLayer(scene.layer)
   this.switchBrush(scene.brush)
   this.setZoom(scene.zoom)
+}
+
+// WebGL - 上下文恢复事件
+Scene.webglRestored = function (event) {
+  if (Scene.state === 'open') {
+    Scene.requestRendering()
+  }
 }
 
 // 窗口 - 调整大小事件
@@ -8202,7 +8212,7 @@ class Parallax {
         gl.uniform1i(program.u_ColorMode, 0)
         gl.uniform4f(program.u_Tint, red, green, blue, gray)
         gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STREAM_DRAW, 0, 16)
-        gl.bindTexture(gl.TEXTURE_2D, texture.base)
+        gl.bindTexture(gl.TEXTURE_2D, texture.base.glTexture)
         gl.drawArrays(gl.TRIANGLE_FAN, 0, 4)
         gl.blend = 'normal'
       }
@@ -8378,7 +8388,7 @@ class Light {
     gl.uniform1i(program.u_LightMode, mode)
     gl.uniform4f(program.u_LightColor, red, green, blue, 0)
     gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STREAM_DRAW, 0, 16)
-    gl.bindTexture(gl.TEXTURE_2D, texture?.base)
+    gl.bindTexture(gl.TEXTURE_2D, texture?.base.glTexture)
     gl.drawArrays(gl.TRIANGLE_FAN, 0, 4)
   }
 

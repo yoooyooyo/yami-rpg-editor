@@ -112,6 +112,7 @@ const UI = {
   saveToProject: null,
   loadFromProject: null,
   // events
+  webglRestored: null,
   windowResize: null,
   themechange: null,
   datachange: null,
@@ -238,7 +239,7 @@ UI.initialize = function () {
     if (!image) return
     image.guid = 'ui:control-point'
     this.controlPointTexture = new ImageTexture(image)
-    this.controlPointTexture.protectBaseTexture()
+    this.controlPointTexture.base.protected = true
   })
 
   // 创建位移计时器
@@ -443,6 +444,7 @@ UI.initialize = function () {
   window.on('keydown', this.keydown)
   this.page.on('resize', this.windowResize)
   this.head.on('pointerdown', this.headPointerdown)
+  GL.canvas.on('webglcontextrestored', this.webglRestored)
   $('#ui-head-start').on('pointerdown', this.switchPointerdown)
   $('#ui-zoom').on('focus', this.zoomFocus)
   $('#ui-zoom').on('input', this.zoomInput)
@@ -1613,7 +1615,7 @@ UI.drawControlPoints = function () {
     gl.uniform1i(program.u_ColorMode, 0)
     gl.uniform4f(program.u_Tint, 0, 0, 0, 0)
     gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STREAM_DRAW, 0, vi)
-    gl.bindTexture(gl.TEXTURE_2D, texture.base)
+    gl.bindTexture(gl.TEXTURE_2D, texture.base.glTexture)
     gl.drawElements(gl.TRIANGLES, vi / 16 * 6, gl.UNSIGNED_INT, 0)
   }
 }
@@ -1749,6 +1751,13 @@ UI.saveToProject = function (project) {
 UI.loadFromProject = function (project) {
   const {ui} = project
   this.setZoom(ui.zoom)
+}
+
+// WebGL - 上下文恢复事件
+UI.webglRestored = function (event) {
+  if (UI.state === 'open') {
+    UI.requestRendering()
+  }
 }
 
 // 窗口 - 调整大小事件
@@ -4239,7 +4248,7 @@ UI.ProgressBar = class ProgressBarElement extends UI.Element {
         }
       }
       GL.bufferData(GL.ARRAY_BUFFER, vertices, GL.STREAM_DRAW, 0, vertexLength)
-      GL.bindTexture(GL.TEXTURE_2D, base)
+      GL.bindTexture(GL.TEXTURE_2D, base.glTexture)
       GL.drawArrays(GL.TRIANGLE_FAN, 0, drawingLength)
     }
 

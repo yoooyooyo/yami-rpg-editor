@@ -1,39 +1,77 @@
 'use strict'
 
-const WebGLRenderingContext = function IIFE () {
-  if (window.WebGL2RenderingContext) {
-    window.WebGL2RenderingContext.prototype.version = 'webgl2'
-    return window.WebGL2RenderingContext
-  } else {
-    window.WebGLRenderingContext.prototype.version = 'webgl1'
+/**
+ * @type {WebGLRenderingContext}
+ */
+let GL
+namespace: {
+  // 创建画布元素
+  const canvas = document.createElement('canvas')
+  canvas.width = 0
+  canvas.height = 0
+  canvas.style.position = 'absolute'
+  canvas.style.width = '100%'
+  canvas.style.height = '100%'
 
-    // 获取 WebGL1 上下文并使它兼容 WebGL2 部分特性
-    const getContext = HTMLCanvasElement.prototype.getContext
-    HTMLCanvasElement.prototype.getContext = function (type, options) {
-      if (type === 'webgl2') {
-        const gl = getContext.call(this, 'webgl', options)
+  // 主题画布背景颜色
+  const background = {
+    light: {r: 0xc8, g: 0xc8, b: 0xc8},
+    dark: {r: 0x20, g: 0x20, b: 0x20},
+  }
 
-        // 获取元素索引 32 位无符号整数扩展
-        const element_index_uint = gl.getExtension('OES_element_index_uint')
+  // 侦听主题改变事件
+  window.on('themechange', function (event) {
+    const {r, g, b} = background[event.value]
+    GL.BACKGROUND_RED = r / 255
+    GL.BACKGROUND_GREEN = g / 255
+    GL.BACKGROUND_BLUE = b / 255
+  })
 
-        // 获取顶点数组对象扩展
-        const vertex_array_object = gl.getExtension('OES_vertex_array_object')
-        gl.createVertexArray = vertex_array_object.createVertexArrayOES.bind(vertex_array_object)
-        gl.deleteVertexArray = vertex_array_object.deleteVertexArrayOES.bind(vertex_array_object)
-        gl.isVertexArray = vertex_array_object.isVertexArrayOES.bind(vertex_array_object)
-        gl.bindVertexArray = vertex_array_object.bindVertexArrayOES.bind(vertex_array_object)
+  // 侦听WebGL上下文丢失事件
+  canvas.on('webglcontextlost', function (event) {
+    event.preventDefault()
+    setTimeout(() => GL.WEBGL_lose_context.restoreContext())
+  })
 
-        // 获取最小和最大混合模式扩展
-        const blend_minmax = gl.getExtension('EXT_blend_minmax')
-        gl.MIN = blend_minmax.MIN_EXT
-        gl.MAX = blend_minmax.MAX_EXT
-        return gl
-      }
-      return getContext.call(this, type, options)
-    }
+  // 侦听WebGL上下文恢复事件
+  canvas.on('webglcontextrestored', function (event) {
+    GL.restore()
+  })
 
-    // 更新缓冲数据
-    const prototype = window.WebGLRenderingContext.prototype
+  // WebGL上下文选项
+  const options = {
+    antialias: false,
+    alpha: false,
+    depth: true,
+    stencil: false,
+    premultipliedAlpha: false,
+    preserveDrawingBuffer: false,
+    desynchronized: true,
+  }
+
+  // 优先使用WebGL2(Win10 DirectX11)
+  GL = canvas.getContext('webgl2', options)
+  if (GL instanceof WebGL2RenderingContext) {} else {
+    // 回退到WebGL1(Win7 DirectX9以及旧移动设备)
+    GL = canvas.getContext('webgl', options)
+
+    // 获取元素索引 32 位无符号整数扩展
+    const element_index_uint = GL.getExtension('OES_element_index_uint')
+
+    // 获取顶点数组对象扩展
+    const vertex_array_object = GL.getExtension('OES_vertex_array_object')
+    GL.createVertexArray = vertex_array_object.createVertexArrayOES.bind(vertex_array_object)
+    GL.deleteVertexArray = vertex_array_object.deleteVertexArrayOES.bind(vertex_array_object)
+    GL.isVertexArray = vertex_array_object.isVertexArrayOES.bind(vertex_array_object)
+    GL.bindVertexArray = vertex_array_object.bindVertexArrayOES.bind(vertex_array_object)
+
+    // 获取最小和最大混合模式扩展
+    const blend_minmax = GL.getExtension('EXT_blend_minmax')
+    GL.MIN = blend_minmax.MIN_EXT
+    GL.MAX = blend_minmax.MAX_EXT
+
+    // 重写更新缓冲数据方法
+    const prototype = WebGLRenderingContext.prototype
     prototype._bufferData = prototype.bufferData
     prototype.bufferData = function (target, data, usage, offset, length) {
       if (length !== undefined) {
@@ -42,133 +80,96 @@ const WebGLRenderingContext = function IIFE () {
       }
       return this._bufferData(target, data, usage)
     }
-
-    return window.WebGLRenderingContext
   }
-}()
+
+  // 获取失去上下文扩展
+  GL.WEBGL_lose_context = GL.getExtension('WEBGL_lose_context')
+}
 
 // ******************************** WebGL方法 ********************************
 
-// 画布元素方法 - 返回WebGL上下文
-HTMLCanvasElement.prototype.getWebGL = function () {
-  const gl = this.getContext('webgl2', {
-    antialias: false,
-    alpha: false,
-    depth: true,
-    stencil: false,
-    premultipliedAlpha: false,
-    preserveDrawingBuffer: false,
-    desynchronized: true,
-  })
-
-  // properties
-  gl.flip = null
-  gl.alpha = null
-  gl.blend = null
-  gl.matrix = null
-  gl.width = null
-  gl.height = null
-  gl.program = null
-  gl.layers = null
-  gl.zeros = null
-  gl.arrays = null
-  gl.frameBuffer = null
-  gl.vertexBuffer = null
-  gl.elementBuffer = null
-  gl.binding = null
-  gl.lightmap = null
-  gl.stencilTexture = null
-  gl.textureManager = null
-  gl.batchRenderer = null
-  gl.maxTexUnits = null
-  gl.contrast = null
-  gl.ambient = null
-  // methods
-  gl.updateBlending = null
-  // programs
-  gl.imageProgram = null
-  gl.tileProgram = null
-  gl.textProgram = null
-  gl.spriteProgram = null
-  gl.particleProgram = null
-  gl.lightProgram = null
-  gl.graphicProgram = null
-  gl.dashedLineProgram = null
-  gl.initialize()
-  return gl
+// WebGL上下文方法 - 恢复上下文
+GL.restore = function () {
+  const {contrast, ambient} = this
+  this.textureManager.restore()
+  this.initialize()
+  this.setContrast(contrast)
+  this.setAmbientLight(ambient)
+  this.updateLightTexSize()
 }
 
 // WebGL上下文方法 - 初始化
-WebGLRenderingContext.prototype.initialize = function () {
+GL.initialize = function () {
   // 设置初始属性
-  this.flip = -1
-  this.alpha = 1
-  this.blend = 'normal'
-  this.matrix = new Matrix()
+  this.flip = this.flip ?? -1
+  this.alpha = this.alpha ?? 1
+  this.blend = this.blend ?? 'normal'
+  this.matrix = this.matrix ?? new Matrix()
   this.width = this.drawingBufferWidth
   this.height = this.drawingBufferHeight
+  this.program = null
+  this.binding = null
+
+  // 设置光照对比度
+  this.contrast = 0
 
   // 创建环境光对象
-  this.ambient = {red: 0, green: 0, blue: 0}
+  this.ambient = {red: -1, green: -1, blue: -1}
 
   // 创建纹理管理器
-  this.textureManager = new TextureManager(this)
+  this.textureManager = this.textureManager ?? new TextureManager()
 
   // 设置最大纹理数量
   this.maxTexUnits = 16
 
   // 创建光影纹理
-  this.lightmap = new Texture({
-    context: this,
+  this.lightmap = this.lightmap ?? new Texture({
     format: this.RGB,
     magFilter: this.LINEAR,
     minFilter: this.LINEAR,
   })
-  this.lightmap.protectBaseTexture()
+  this.lightmap.base.protected = true
   this.lightmap.fbo = this.createTextureFBO(this.lightmap)
   this.activeTexture(this.TEXTURE0 + this.maxTexUnits - 1)
-  this.bindTexture(this.TEXTURE_2D, this.lightmap.base)
-  this.texParameteri(this.TEXTURE_2D, this.TEXTURE_WRAP_S, this.CLAMP_TO_EDGE)
-  this.texParameteri(this.TEXTURE_2D, this.TEXTURE_WRAP_T, this.CLAMP_TO_EDGE)
+  this.bindTexture(this.TEXTURE_2D, this.lightmap.base.glTexture)
   this.activeTexture(this.TEXTURE0)
 
   // 创建模板纹理
-  this.stencilTexture = new Texture({
-    context: this,
-    format: this.ALPHA,
-  })
-  this.stencilTexture.protectBaseTexture()
+  this.stencilTexture = this.stencilTexture ?? new Texture({format: this.ALPHA})
+  this.stencilTexture.base.protected = true
 
   // 创建图层数组
-  this.layers = new Uint32Array(0x40000)
+  this.layers = this.layers ?? new Uint32Array(0x40000)
 
   // 创建零值数组
-  this.zeros = new Uint32Array(0x40000)
+  this.zeros = this.zeros ?? new Uint32Array(0x40000)
 
   // 创建类型化数组
   const size = 512 * 512
-  const buffer1 = new ArrayBuffer(size * 96)
-  const buffer2 = new ArrayBuffer(size * 12)
-  const buffer3 = new ArrayBuffer(size * 8)
-  const buffer4 = new ArrayBuffer(size * 40)
-  this.arrays = {
-    0: {
-      uint8: new Uint8Array(buffer1, 0, size * 96),
-      uint32: new Uint32Array(buffer1, 0, size * 24),
-      float32: new Float32Array(buffer1, 0, size * 24),
-    },
-    1: {
-      uint16: new Uint16Array(buffer2, 0, size * 6),
-      uint32: new Uint32Array(buffer2, 0, size * 3),
-      float32: new Float32Array(buffer2, 0, size * 3),
-    },
-    2: {
-      uint32: new Uint32Array(buffer3, 0, size * 2),
-    },
-    3: {
-      uint32: new Uint32Array(buffer4, 0, size * 10),
-      float32: new Float32Array(buffer4, 0, size * 10),
-    },
+  if (!this.arrays) {
+    const buffer1 = new ArrayBuffer(size * 96)
+    const buffer2 = new ArrayBuffer(size * 12)
+    const buffer3 = new ArrayBuffer(size * 8)
+    const buffer4 = new ArrayBuffer(size * 40)
+    this.arrays = {
+      0: {
+        uint8: new Uint8Array(buffer1, 0, size * 96),
+        uint32: new Uint32Array(buffer1, 0, size * 24),
+        float32: new Float32Array(buffer1, 0, size * 24),
+      },
+      1: {
+        uint16: new Uint16Array(buffer2, 0, size * 6),
+        uint32: new Uint32Array(buffer2, 0, size * 3),
+        float32: new Float32Array(buffer2, 0, size * 3),
+      },
+      2: {
+        uint32: new Uint32Array(buffer3, 0, size * 2),
+      },
+      3: {
+        uint32: new Uint32Array(buffer4, 0, size * 10),
+        float32: new Float32Array(buffer4, 0, size * 10),
+      },
+    }
   }
 
   // 创建帧缓冲区
@@ -200,19 +201,22 @@ WebGLRenderingContext.prototype.initialize = function () {
   // 创建批量渲染器
   this.batchRenderer = new BatchRenderer(this)
 
+  // 创建2D上下文对象
+  this.context2d = this.context2d ?? this.createContext2D()
+
   // 创建程序对象
-  this.createImageProgram()
-  this.createTileProgram()
-  this.createTextProgram()
-  this.createSpriteProgram()
-  this.createParticleProgram()
-  this.createLightProgram()
-  this.createGraphicProgram()
-  this.createDashedLineProgram()
+  this.imageProgram = this.createImageProgram()
+  this.tileProgram = this.createTileProgram()
+  this.textProgram = this.createTextProgram()
+  this.spriteProgram = this.createSpriteProgram()
+  this.particleProgram = this.createParticleProgram()
+  this.lightProgram = this.createLightProgram()
+  this.graphicProgram = this.createGraphicProgram()
+  this.dashedLineProgram = this.createDashedLineProgram()
 }
 
 // WebGL上下文方法 - 创建程序对象
-WebGLRenderingContext.prototype.createProgramWithShaders = function (vshader, fshader) {
+GL.createProgramWithShaders = function (vshader, fshader) {
   const vertexShader = this.loadShader(this.VERTEX_SHADER, vshader)
   const fragmentShader = this.loadShader(this.FRAGMENT_SHADER, fshader)
   if (!vertexShader || !fragmentShader) {
@@ -240,7 +244,7 @@ WebGLRenderingContext.prototype.createProgramWithShaders = function (vshader, fs
 }
 
 // WebGL上下文方法 - 加载着色器
-WebGLRenderingContext.prototype.loadShader = function (type, source) {
+GL.loadShader = function (type, source) {
   const shader = this.createShader(type)
   if (!shader) {
     console.error('Unable to create shader')
@@ -259,7 +263,7 @@ WebGLRenderingContext.prototype.loadShader = function (type, source) {
 }
 
 // WebGL上下文方法 - 创建图像程序
-WebGLRenderingContext.prototype.createImageProgram = function () {
+GL.createImageProgram = function () {
   const program = this.createProgramWithShaders(
     `
     attribute   vec2        a_Position;
@@ -413,11 +417,11 @@ WebGLRenderingContext.prototype.createImageProgram = function () {
   program.u_Color = u_Color
   program.u_Tint = u_Tint
   program.u_Repeat = u_Repeat
-  this.imageProgram = program
+  return program
 }
 
 // WebGL上下文方法 - 创建图块程序
-WebGLRenderingContext.prototype.createTileProgram = function () {
+GL.createTileProgram = function () {
   const program = this.createProgramWithShaders(
     `
     attribute   vec2        a_Position;
@@ -566,11 +570,11 @@ WebGLRenderingContext.prototype.createTileProgram = function () {
   program.u_TintMode = u_TintMode
   program.u_Tint = u_Tint
   program.u_Samplers = u_Samplers
-  this.tileProgram = program
+  return program
 }
 
 // WebGL上下文方法 - 创建文字程序
-WebGLRenderingContext.prototype.createTextProgram = function () {
+GL.createTextProgram = function () {
   const program = this.createProgramWithShaders(
     `
     attribute   vec2        a_Position;
@@ -650,11 +654,11 @@ WebGLRenderingContext.prototype.createTextProgram = function () {
   program.a_TexCoord = a_TexCoord
   program.a_TextColor = a_TextColor
   program.u_Threshold = u_Threshold
-  this.textProgram = program
+  return program
 }
 
 // WebGL上下文方法 - 创建精灵程序
-WebGLRenderingContext.prototype.createSpriteProgram = function () {
+GL.createSpriteProgram = function () {
   const program = this.createProgramWithShaders(
     `
     attribute   vec2        a_Position;
@@ -811,11 +815,11 @@ WebGLRenderingContext.prototype.createSpriteProgram = function () {
   program.u_LightTexSize = u_LightTexSize
   program.u_Tint = u_Tint
   program.u_Samplers = u_Samplers
-  this.spriteProgram = program
+  return program
 }
 
 // WebGL上下文方法 - 创建粒子程序
-WebGLRenderingContext.prototype.createParticleProgram = function () {
+GL.createParticleProgram = function () {
   const program = this.createProgramWithShaders(
     `
     attribute   vec2        a_Position;
@@ -912,11 +916,11 @@ WebGLRenderingContext.prototype.createParticleProgram = function () {
   program.u_Matrix = u_Matrix
   program.u_Mode = u_Mode
   program.u_Tint = u_Tint
-  this.particleProgram = program
+  return program
 }
 
 // WebGL上下文方法 - 创建光源程序
-WebGLRenderingContext.prototype.createLightProgram = function () {
+GL.createLightProgram = function () {
   const program = this.createProgramWithShaders(
     `
     attribute   vec2        a_Position;
@@ -1005,11 +1009,11 @@ WebGLRenderingContext.prototype.createLightProgram = function () {
   program.u_Matrix = u_Matrix
   program.u_LightMode = u_LightMode
   program.u_LightColor = u_LightColor
-  this.lightProgram = program
+  return program
 }
 
 // WebGL上下文方法 - 创建图形程序
-WebGLRenderingContext.prototype.createGraphicProgram = function () {
+GL.createGraphicProgram = function () {
   const program = this.createProgramWithShaders(
     `
     attribute   vec2        a_Position;
@@ -1082,11 +1086,11 @@ WebGLRenderingContext.prototype.createGraphicProgram = function () {
   program.a_Position = a_Position
   program.a_Color = a_Color
   program.u_Matrix = u_Matrix
-  this.graphicProgram = program
+  return program
 }
 
 // WebGL上下文方法 - 创建虚线程序
-WebGLRenderingContext.prototype.createDashedLineProgram = function () {
+GL.createDashedLineProgram = function () {
   const program = this.createProgramWithShaders(
     `
     attribute   vec2        a_Position;
@@ -1155,18 +1159,18 @@ WebGLRenderingContext.prototype.createDashedLineProgram = function () {
   program.a_Distance = a_Distance
   program.u_Matrix = u_Matrix
   program.u_Color = u_Color
-  this.dashedLineProgram = program
+  return program
 }
 
 // WebGL上下文方法 - 重置状态
-WebGLRenderingContext.prototype.reset = function () {
+GL.reset = function () {
   this.blend = 'normal'
   this.alpha = 1
   this.matrix.reset()
 }
 
 // WebGL上下文方法 - 创建混合模式更新器
-WebGLRenderingContext.prototype.createBlendingUpdater = function () {
+GL.createBlendingUpdater = function () {
   // 开启混合功能
   this.enable(this.BLEND)
 
@@ -1241,7 +1245,7 @@ WebGLRenderingContext.prototype.createBlendingUpdater = function () {
 }
 
 // WebGL上下文方法 - 设置对比度
-WebGLRenderingContext.prototype.setContrast = function (contrast) {
+GL.setContrast = function (contrast) {
   if (this.contrast !== contrast) {
     this.contrast = contrast
     const program = this.program
@@ -1258,7 +1262,7 @@ WebGLRenderingContext.prototype.setContrast = function (contrast) {
 }
 
 // WebGL上下文方法 - 设置环境光
-WebGLRenderingContext.prototype.setAmbientLight = function ({red, green, blue}) {
+GL.setAmbientLight = function ({red, green, blue}) {
   const ambient = this.ambient
   if (ambient.red !== red ||
     ambient.green !== green ||
@@ -1282,7 +1286,7 @@ WebGLRenderingContext.prototype.setAmbientLight = function ({red, green, blue}) 
 }
 
 // WebGL上下文方法 - 调整光影纹理
-WebGLRenderingContext.prototype.resizeLightmap = function () {
+GL.resizeLightmap = function () {
   const {lightmap, width, height} = this
   if (lightmap.innerWidth !== width ||
     lightmap.innerHeight !== height) {
@@ -1312,8 +1316,9 @@ WebGLRenderingContext.prototype.resizeLightmap = function () {
 }
 
 // WebGL上下文方法 - 更新光照纹理大小
-WebGLRenderingContext.prototype.updateLightTexSize = function () {
+GL.updateLightTexSize = function () {
   const texture = this.lightmap
+  if (texture.width === 0) return
   const width = this.drawingBufferWidth
   const height = this.drawingBufferHeight
   const sizeX = texture.width / width * 2
@@ -1334,7 +1339,7 @@ WebGLRenderingContext.prototype.updateLightTexSize = function () {
 
 // WebGL上下文方法 - 更新采样器数量
 // 避免chrome 69未绑定纹理警告
-WebGLRenderingContext.prototype.updateSamplerNum = function (samplerNum) {
+GL.updateSamplerNum = function (samplerNum) {
   const program = this.program
   const lastNum = program.samplerNum
   if (lastNum !== samplerNum) {
@@ -1353,28 +1358,28 @@ WebGLRenderingContext.prototype.updateSamplerNum = function (samplerNum) {
 }
 
 // WebGL上下文方法 - 绑定帧缓冲对象
-WebGLRenderingContext.prototype.bindFBO = function (fbo) {
+GL.bindFBO = function (fbo) {
   this.binding = fbo
   this.flip = 1
   this.bindFramebuffer(this.FRAMEBUFFER, fbo)
 }
 
 // WebGL上下文方法 - 解除帧缓冲对象的绑定
-WebGLRenderingContext.prototype.unbindFBO = function () {
+GL.unbindFBO = function () {
   this.binding = null
   this.flip = -1
   this.bindFramebuffer(this.FRAMEBUFFER, null)
 }
 
 // 设置视口大小
-WebGLRenderingContext.prototype.setViewport = function (x, y, width, height) {
+GL.setViewport = function (x, y, width, height) {
   this.width = width
   this.height = height
   this.viewport(x, y, width, height)
 }
 
 // 重置视口大小
-WebGLRenderingContext.prototype.resetViewport = function () {
+GL.resetViewport = function () {
   const width = this.drawingBufferWidth
   const height = this.drawingBufferHeight
   this.width = width
@@ -1383,7 +1388,7 @@ WebGLRenderingContext.prototype.resetViewport = function () {
 }
 
 // WebGL上下文方法 - 调整画布大小
-WebGLRenderingContext.prototype.resize = function (width, height) {
+GL.resize = function (width, height) {
   const canvas = this.canvas
   if (canvas.width !== width) {
     canvas.width = width
@@ -1401,7 +1406,7 @@ WebGLRenderingContext.prototype.resize = function (width, height) {
 }
 
 // WebGL上下文方法 - 绘制图像
-WebGLRenderingContext.prototype.drawImage = function IIFE() {
+GL.drawImage = function drawImage() {
 const defTint = new Uint8Array(4)
 return function (texture, dx, dy, dw, dh, tint = defTint) {
   if (!texture.complete) return
@@ -1462,13 +1467,13 @@ return function (texture, dx, dy, dw, dh, tint = defTint) {
   this.uniform1i(program.u_ColorMode, 0)
   this.uniform4f(program.u_Tint, red, green, blue, gray)
   this.bufferData(this.ARRAY_BUFFER, vertices, this.STREAM_DRAW, 0, 16)
-  this.bindTexture(this.TEXTURE_2D, base)
+  this.bindTexture(this.TEXTURE_2D, base.glTexture)
   this.drawArrays(this.TRIANGLE_FAN, 0, 4)
 }
 }()
 
 // WebGL上下文方法 - 绘制切片图像
-WebGLRenderingContext.prototype.drawSliceImage = function (texture, dx, dy, dw, dh, clip, border, tint) {
+GL.drawSliceImage = function (texture, dx, dy, dw, dh, clip, border, tint) {
   if (!texture.complete) return
 
   // 计算变换矩阵
@@ -1508,7 +1513,7 @@ WebGLRenderingContext.prototype.drawSliceImage = function (texture, dx, dy, dw, 
   this.uniform1i(program.u_ColorMode, 2)
   this.uniform4f(program.u_Tint, red, green, blue, gray)
   this.bufferData(this.ARRAY_BUFFER, vertices, this.STREAM_DRAW, 0, count * 16)
-  this.bindTexture(this.TEXTURE_2D, texture.base)
+  this.bindTexture(this.TEXTURE_2D, texture.base.glTexture)
 
   // 绑定纹理并绘制图像
   for (let i = 0; i < count; i++) {
@@ -1523,7 +1528,7 @@ WebGLRenderingContext.prototype.drawSliceImage = function (texture, dx, dy, dw, 
 }
 
 // WebGL上下文方法 - 绘制文字
-WebGLRenderingContext.prototype.drawText = function (texture, dx, dy, dw, dh, color) {
+GL.drawText = function (texture, dx, dy, dw, dh, color) {
   if (!texture.complete) return
 
   const program = this.textProgram.use()
@@ -1583,12 +1588,12 @@ WebGLRenderingContext.prototype.drawText = function (texture, dx, dy, dw, dh, co
   // 绘制图像
   this.bindVertexArray(program.vao)
   this.bufferData(this.ARRAY_BUFFER, vertices, this.STREAM_DRAW, 0, 20)
-  this.bindTexture(this.TEXTURE_2D, base)
+  this.bindTexture(this.TEXTURE_2D, base.glTexture)
   this.drawArrays(this.TRIANGLE_FAN, 0, 4)
 }
 
 // WebGL上下文方法 - 填充矩形
-WebGLRenderingContext.prototype.fillRect = function (dx, dy, dw, dh, color) {
+GL.fillRect = function (dx, dy, dw, dh, color) {
   const program = this.graphicProgram.use()
   const vertices = this.arrays[0].float32
   const colors = this.arrays[0].uint32
@@ -1625,14 +1630,14 @@ WebGLRenderingContext.prototype.fillRect = function (dx, dy, dw, dh, color) {
   this.drawArrays(this.TRIANGLE_FAN, 0, 4)
 }
 
-// WebGL上下文属性 - 缓冲画布的2D上下文对象
-WebGLRenderingContext.prototype.context2d = function IIFE() {
+// WebGL上下文方法 - 创建2D上下文对象(绘制文字专用画布)
+GL.createContext2D = function () {
   const canvas = document.createElement('canvas')
   canvas.width = 0
   canvas.height = 0
   const context = canvas.getContext('2d')
 
-  // 调整画布大小
+  // 扩展方法 - 调整画布大小
   context.resize = function (width, height) {
     if (canvas.width === width &&
       canvas.height === height) {
@@ -1648,10 +1653,10 @@ WebGLRenderingContext.prototype.context2d = function IIFE() {
   }
 
   return context
-}()
+}
 
 // WebGL上下文方法 - 填充描边文字
-WebGLRenderingContext.prototype.fillTextWithOutline = function IIFE() {
+GL.fillTextWithOutline = function fillTextWithOutline() {
   const offsets = [
     {ox: -1, oy:  0, rgba: 0},
     {ox:  1, oy:  0, rgba: 0},
@@ -1739,13 +1744,14 @@ WebGLRenderingContext.prototype.fillTextWithOutline = function IIFE() {
 }()
 
 // WebGL上下文方法 - 创建普通纹理
-WebGLRenderingContext.prototype.createNormalTexture = function (options = {}) {
+GL.createNormalTexture = function (options = {}) {
   const magFilter = options.magFilter ?? this.NEAREST
   const minFilter = options.minFilter ?? this.LINEAR
-  const texture = this.createTexture()
-  texture.width = 0
-  texture.height = 0
-  this.bindTexture(this.TEXTURE_2D, texture)
+  const texture = new BaseTexture()
+  texture.magFilter = magFilter
+  texture.minFilter = minFilter
+  texture.format = options.format ?? GL.RGBA
+  this.bindTexture(this.TEXTURE_2D, texture.glTexture)
   this.texParameteri(this.TEXTURE_2D, this.TEXTURE_MAG_FILTER, magFilter)
   this.texParameteri(this.TEXTURE_2D, this.TEXTURE_MIN_FILTER, minFilter)
   this.texParameteri(this.TEXTURE_2D, this.TEXTURE_WRAP_S, this.CLAMP_TO_EDGE)
@@ -1755,19 +1761,19 @@ WebGLRenderingContext.prototype.createNormalTexture = function (options = {}) {
 }
 
 // WebGL上下文方法 - 创建图像纹理
-WebGLRenderingContext.prototype.createImageTexture = function (image, options = {}) {
+GL.createImageTexture = function (image, options = {}) {
   const magFilter = options.magFilter ?? this.NEAREST
   const minFilter = options.minFilter ?? this.LINEAR
   const guid = image instanceof Image ? image.guid : image
   const manager = this.textureManager
   let texture = manager.images[guid]
   if (!texture) {
-    texture = this.createTexture()
+    texture = new BaseTexture()
     texture.guid = guid
     texture.image = null
-    texture.width = 0
-    texture.height = 0
     texture.refCount = 0
+    texture.magFilter = magFilter
+    texture.minFilter = minFilter
     manager.append(texture)
     manager.images[guid] = texture
     const initialize = image => {
@@ -1775,7 +1781,7 @@ WebGLRenderingContext.prototype.createImageTexture = function (image, options = 
         texture.image = image
         texture.width = image.naturalWidth
         texture.height = image.naturalHeight
-        this.bindTexture(this.TEXTURE_2D, texture)
+        this.bindTexture(this.TEXTURE_2D, texture.glTexture)
         this.texParameteri(this.TEXTURE_2D, this.TEXTURE_MAG_FILTER, magFilter)
         this.texParameteri(this.TEXTURE_2D, this.TEXTURE_MIN_FILTER, minFilter)
         this.texParameteri(this.TEXTURE_2D, this.TEXTURE_WRAP_S, this.CLAMP_TO_EDGE)
@@ -1798,45 +1804,107 @@ WebGLRenderingContext.prototype.createImageTexture = function (image, options = 
 }
 
 // WebGL上下文方法 - 创建纹理帧缓冲对象
-WebGLRenderingContext.prototype.createTextureFBO = function (texture) {
+GL.createTextureFBO = function (texture) {
   const fbo = this.createFramebuffer()
   this.bindFramebuffer(this.FRAMEBUFFER, fbo)
-  this.framebufferTexture2D(this.FRAMEBUFFER, this.COLOR_ATTACHMENT0, this.TEXTURE_2D, texture.base, 0)
+
+  // 绑定纹理到颜色缓冲区
+  this.framebufferTexture2D(this.FRAMEBUFFER, this.COLOR_ATTACHMENT0, this.TEXTURE_2D, texture.base.glTexture, 0)
+
+  // 创建深度模板缓冲区
+  const depthStencilBuffer = this.createRenderbuffer()
+  this.bindRenderbuffer(this.RENDERBUFFER, depthStencilBuffer)
+  this.framebufferRenderbuffer(this.FRAMEBUFFER, this.DEPTH_STENCIL_ATTACHMENT, this.RENDERBUFFER, depthStencilBuffer)
+  this.renderbufferStorage(this.RENDERBUFFER, this.DEPTH_STENCIL, texture.base.width, texture.base.height)
+  this.bindRenderbuffer(this.RENDERBUFFER, null)
   this.bindFramebuffer(this.FRAMEBUFFER, null)
+  texture.depthStencilBuffer = depthStencilBuffer
+
+  // 重写纹理方法 - 调整大小
+  texture.resize = (width, height) => {
+    Texture.prototype.resize.call(texture, width, height)
+
+    // 调整深度模板缓冲区大小
+    this.bindRenderbuffer(this.RENDERBUFFER, depthStencilBuffer)
+    this.renderbufferStorage(this.RENDERBUFFER, this.DEPTH_STENCIL, width, height)
+    this.bindRenderbuffer(this.RENDERBUFFER, null)
+  }
+  // 还需要一个方法来恢复
   return fbo
 }
 
-// ******************************** WebGL纹理方法 ********************************
+// ******************************** 基础纹理类 ********************************
 
-namespace: {
-const KEY = Symbol('LOAD_CALLBACK')
+class BaseTexture {
+  constructor() {
+    this.glTexture = GL.createTexture()
+    this.width = 0
+    this.height = 0
+  }
 
-// WebGL纹理方法 - 设置加载回调
-WebGLTexture.prototype.on = function (type, callback) {
-  let cache = this[KEY]
-  if (cache === type) {
-    callback(this)
-    return
+  // 恢复普通纹理
+  restoreNormalTexture() {
+    this.glTexture = GL.createTexture()
+    const {format, width, height} = this
+    GL.bindTexture(GL.TEXTURE_2D, this.glTexture)
+    GL.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_MAG_FILTER, this.magFilter)
+    GL.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_MIN_FILTER, this.minFilter)
+    GL.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_WRAP_S, GL.CLAMP_TO_EDGE)
+    GL.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_WRAP_T, GL.CLAMP_TO_EDGE)
+    GL.texImage2D(GL.TEXTURE_2D, 0, format, width, height, 0, format, GL.UNSIGNED_BYTE, null)
   }
-  if (cache === undefined) {
-    cache = this[KEY] =
-    {load: [], error: []}
-  }
-  if (typeof cache === 'object') {
-    cache[type].push(callback)
-  }
-}
 
-// WebGL纹理方法 - 执行加载回调
-WebGLTexture.prototype.reply = function (type) {
-  const cache = this[KEY]
-  if (typeof cache === 'object') {
-    for (const callback of cache[type]) {
+  // 恢复图像纹理
+  restoreImageTexture() {
+    this.glTexture = GL.createTexture()
+    GL.bindTexture(GL.TEXTURE_2D, this.glTexture)
+    GL.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_MAG_FILTER, this.magFilter)
+    GL.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_MIN_FILTER, this.minFilter)
+    GL.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_WRAP_S, GL.CLAMP_TO_EDGE)
+    GL.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_WRAP_T, GL.CLAMP_TO_EDGE)
+    GL.texImage2D(GL.TEXTURE_2D, 0, GL.RGBA, GL.RGBA, GL.UNSIGNED_BYTE, this.image)
+  }
+
+  /**
+   * 基础纹理方法 - 设置加载回调
+   * @param {string} type 回调事件类型
+   * @param {function} callback 回调函数
+   */
+  on(type, callback) {
+    // 如果已加载完成，立即执行回调
+    let cache = this[BaseTexture.CALLBACK]
+    if (cache === type) {
       callback(this)
+      return
+    }
+    // 首次调用，创建加载回调缓存
+    if (cache === undefined) {
+      cache = this[BaseTexture.CALLBACK] =
+      {load: [], error: []}
+    }
+    // 如果未加载完成，添加回调到缓存中
+    if (typeof cache === 'object') {
+      cache[type].push(callback)
     }
   }
-  this[KEY] = type
-}
+
+  /**
+   * 基础纹理方法 - 执行加载回调
+   * @param {string} type 回调事件类型
+   */
+  reply(type) {
+    const cache = this[BaseTexture.CALLBACK]
+    if (typeof cache === 'object') {
+      // 调用所有的纹理加载回调
+      for (const callback of cache[type]) {
+        callback(this)
+      }
+    }
+    // 将缓存替换为类型名称
+    this[BaseTexture.CALLBACK] = type
+  }
+
+  static CALLBACK = Symbol('LOAD_CALLBACK')
 }
 
 // ******************************** 纹理类 ********************************
@@ -1849,7 +1917,6 @@ class Texture {
   y         //:number
   width     //:number
   height    //:number
-  format    //:number
 
   constructor(options = {}) {
     if (new.target !== Texture) {
@@ -1857,15 +1924,13 @@ class Texture {
     }
 
     // 设置属性
-    const gl = options.context ?? GL
     this.complete = true
-    this.base = gl.createNormalTexture(options)
-    this.gl = gl
+    this.base = GL.createNormalTexture(options)
+    this.gl = GL
     this.x = 0
     this.y = 0
     this.width = 0
     this.height = 0
-    this.format = options.format ?? gl.RGBA
   }
 
   // 裁剪
@@ -1881,7 +1946,7 @@ class Texture {
   clear(red = 0, green = 0, blue = 0, alpha = 0) {
     const gl = this.gl
     gl.bindFBO(gl.frameBuffer)
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.base, 0)
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.base.glTexture, 0)
     gl.clearColor(red, green, blue, alpha)
     gl.clear(gl.COLOR_BUFFER_BIT)
     gl.unbindFBO()
@@ -1889,10 +1954,11 @@ class Texture {
 
   // 调整大小
   resize(width, height) {
-    const {gl, base, format} = this
+    const {gl, base} = this
+    const {format} = base
     base.width = width
     base.height = height
-    gl.bindTexture(gl.TEXTURE_2D, base)
+    gl.bindTexture(gl.TEXTURE_2D, base.glTexture)
     gl.texImage2D(gl.TEXTURE_2D, 0, format, width, height, 0, format, gl.UNSIGNED_BYTE, null)
     return this.clip(0, 0, width, height)
   }
@@ -1901,12 +1967,13 @@ class Texture {
   fromImage(image) {
     const gl = this.gl
     const base = this.base
-    const format = this.format
+    const format = base.format
     const width = image.width
     const height = image.height
+    base.image = image
     base.width = width
     base.height = height
-    gl.bindTexture(gl.TEXTURE_2D, base)
+    gl.bindTexture(gl.TEXTURE_2D, base.glTexture)
     gl.texImage2D(gl.TEXTURE_2D, 0, format, format, gl.UNSIGNED_BYTE, image)
     return this.clip(0, 0, width, height)
   }
@@ -1920,7 +1987,7 @@ class Texture {
       const {buffer, length} = imageData.data
       const uint8 = new Uint8Array(buffer, 0, length)
       gl.bindFramebuffer(gl.FRAMEBUFFER, gl.frameBuffer)
-      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, base, 0)
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, base.glTexture, 0)
       gl.readPixels(x, y, width, height, gl.RGBA, gl.UNSIGNED_BYTE, uint8)
       gl.binding ? gl.bindFBO(gl.binding) : gl.unbindFBO()
       return imageData
@@ -1950,11 +2017,6 @@ class Texture {
   //   }
   // }
 
-  // 保护基础纹理不被销毁
-  protectBaseTexture() {
-    this.base.protected = true
-  }
-
   // 销毁
   destroy() {
     if (this.base) {
@@ -1972,11 +2034,10 @@ class ImageTexture extends Texture {
     super(options)
 
     // 设置属性
-    const gl = options.context ?? GL
-    const texture = gl.createImageTexture(image, options)
+    const texture = GL.createImageTexture(image, options)
     this.complete = false
     this.base = texture
-    this.gl = gl
+    this.gl = GL
     this.x = 0
     this.y = 0
     this.width = 0
@@ -2031,7 +2092,9 @@ class ImageTexture extends Texture {
 
       // 绘制切片图像需要使用临近采样
       const {gl} = this
-      gl.bindTexture(gl.TEXTURE_2D, this.base)
+      this.base.magFilter = gl.NEAREST
+      this.base.minFilter = gl.NEAREST
+      gl.bindTexture(gl.TEXTURE_2D, this.base.glTexture)
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
     }
@@ -2111,10 +2174,10 @@ class ImageTexture extends Texture {
 }
 
 // 设置加载回调
-ImageTexture.prototype.on = WebGLTexture.prototype.on
+ImageTexture.prototype.on = BaseTexture.prototype.on
 
 // 执行加载回调
-ImageTexture.prototype.reply = WebGLTexture.prototype.reply
+ImageTexture.prototype.reply = BaseTexture.prototype.reply
 
 // ******************************** 纹理管理器类 ********************************
 
@@ -2125,8 +2188,8 @@ class TextureManager {
   pointer //:number
   count   //:number
 
-  constructor(gl) {
-    this.gl = gl
+  constructor() {
+    this.gl = GL
     this.map = {}
     this.images = {}
     this.pointer = 0
@@ -2147,7 +2210,7 @@ class TextureManager {
         texture.image = image
         texture.width = image.naturalWidth
         texture.height = image.naturalHeight
-        gl.bindTexture(gl.TEXTURE_2D, texture)
+        gl.bindTexture(gl.TEXTURE_2D, texture.glTexture)
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image)
       }
     })
@@ -2171,7 +2234,7 @@ class TextureManager {
   delete(texture) {
     const i = texture.index
     const {gl, map} = this
-    gl.deleteTexture(texture)
+    gl.deleteTexture(texture.glTexture)
     // 通过ID删除图像映射表中的纹理
     if (texture.refCount === 0) {
       delete this.images[texture.guid]
@@ -2192,7 +2255,7 @@ class TextureManager {
     for (const texture of Object.values(map)) {
       if (texture.protected === undefined) {
         delete map[texture.index]
-        gl.deleteTexture(texture)
+        gl.deleteTexture(texture.glTexture)
         this.count--
         if (this.pointer > texture.index) {
           this.pointer = texture.index
@@ -2202,6 +2265,35 @@ class TextureManager {
     for (const texture of Object.values(images)) {
       if (texture.protected === undefined) {
         delete images[texture.guid]
+      }
+    }
+  }
+
+  // 替换纹理
+  replace(oldTex, newTex) {
+    newTex.index = oldTex.index
+    if (this.map[oldTex.index]) {
+      this.map[oldTex.index] = newTex
+    }
+    if (oldTex instanceof ImageTexture &&
+      oldTex.guid === newTex.guid) {
+      if (this.images[oldTex.guid] === oldTex) {
+        this.images[oldTex.guid] = newTex
+      }
+    }
+  }
+
+  // 恢复纹理
+  restore() {
+    for (const texture of Object.values(this.map)) {
+      if (texture.onRestore) {
+        texture.onRestore(texture)
+        continue
+      }
+      if (texture.image !== undefined) {
+        texture.restoreImageTexture()
+      } else {
+        texture.restoreNormalTexture()
       }
     }
   }
@@ -2322,7 +2414,7 @@ class BatchRenderer {
           const end = queue[offset - 1] * 1.5
           for (let si = length - 1; si >= 0; si--) {
             gl.activeTexture(gl.TEXTURE0 + si)
-            gl.bindTexture(gl.TEXTURE_2D, texMap[queue[qi + si]])
+            gl.bindTexture(gl.TEXTURE_2D, texMap[queue[qi + si]].glTexture)
           }
           gl.updateSamplerNum(length)
           gl.drawElements(gl.TRIANGLES, end - start, gl.UNSIGNED_INT, start * 4)
@@ -2594,39 +2686,5 @@ class Matrix extends Float32Array {
   static instance = new Matrix()
 }
 
-/**
- * @type {WebGLRenderingContext}
- */
-const GL = function IIFE() {
-  const canvas = document.createElement('canvas')
-  canvas.width = 0
-  canvas.height = 0
-  canvas.style.position = 'absolute'
-  canvas.style.width = '100%'
-  canvas.style.height = '100%'
-  // WebGL上下文有可能丢失
-  // 关闭编辑器只是临时方法
-  // 最终方法应该是恢复上下文和纹理
-  canvas.on('webglcontextlost', function (event) {
-    const get = Local.createGetter('confirmation')
-    Window.confirm({
-      message: get('webGLContextLost'),
-      close: () => {
-        Editor.quit()
-      },
-    }, [{
-      label: get('confirm'),
-    }])
-  })
-  const background = {
-    light: {r: 0xc8, g: 0xc8, b: 0xc8},
-    dark: {r: 0x20, g: 0x20, b: 0x20},
-  }
-  window.on('themechange', function (event) {
-    const {r, g, b} = background[event.value]
-    GL.BACKGROUND_RED = r / 255
-    GL.BACKGROUND_GREEN = g / 255
-    GL.BACKGROUND_BLUE = b / 255
-  })
-  return canvas.getWebGL()
-}()
+// 初始化WebGL上下文
+GL.initialize()
