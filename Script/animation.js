@@ -4708,6 +4708,7 @@ Animation.listKeydown = function (event) {
   if (!this.data) {
     return
   }
+
   const item = this.read()
   if (event.cmdOrCtrlKey) {
     switch (event.code) {
@@ -4922,6 +4923,7 @@ Animation.layerListKeydown = function (event) {
   if (event.target !== this || !this.data) {
     return
   }
+
   const item = this.read()
   if (event.cmdOrCtrlKey) {
     switch (event.code) {

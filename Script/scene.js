@@ -230,6 +230,8 @@ const Scene = {
   loadFromConfig: null,
   saveToProject: null,
   loadFromProject: null,
+  // key status
+  spaceKey: false,
   // events
   webglRestored: null,
   windowResize: null,
@@ -5917,6 +5919,10 @@ Scene.zoomInput = function (event) {
 
 // 屏幕 - 键盘按下事件
 Scene.screenKeydown = function (event) {
+  // 禁止空格键的浏览器滚动事件
+  if (event.code == 'Space') {
+    event.preventDefault()
+  }
   if (this.state === 'open' && (
     this.dragging === null ||
     event.code === 'ShiftLeft')) {
@@ -5953,6 +5959,10 @@ Scene.screenKeydown = function (event) {
       return
     } else {
       switch (event.code) {
+        case 'Space':
+          this.spaceKey = true
+          window.on('keyup', this.spaceKeyup)
+          break
         case 'ShiftLeft':
           // 切换到初始图块帧
           if (!this.shiftKey) {
@@ -6112,6 +6122,17 @@ Scene.shiftKeyup = function (event) {
         window.off('keyup', this.shiftKeyup)
       }
       break
+  }
+}.bind(Scene)
+
+// Space键弹起事件
+Scene.spaceKeyup = function (event) {
+  if (!this.spaceKey || event === undefined) {
+    return
+  }
+  if (event.code === 'Space') {
+    this.spaceKey = false
+    window.off('keyup', this.spaceKeyup)
   }
 }.bind(Scene)
 
