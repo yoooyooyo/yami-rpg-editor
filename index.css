@@ -1600,17 +1600,18 @@ string-var.variable:focus-within::before {
  */
 file-var:focus-within::before {
   position: absolute;
-  margin-left: -2em;
   font-family: var(--font-family-mono);
   color: var(--text-color-disabled);
 }
 
 file-var.constant:focus-within::before {
-  content: 'str';
+  content: 'file';
+  margin-left: -2.6em;
 }
 
 file-var.variable:focus-within::before {
   content: 'var';
+  margin-left: -2em;
 }
 
 /* --------------------------------
@@ -3957,7 +3958,7 @@ nav-item[value=particle].selected {
   -webkit-mask-position: 0 0;
 }
 
-#animation-switch-flip::after {
+#animation-switch-mirror::after {
   -webkit-mask-image: url(images/animation_buttons.png);
   -webkit-mask-size: 100% 200%;
   -webkit-mask-position: 0 -100%;
@@ -4128,19 +4129,19 @@ nav-item[value=particle].selected {
   border-bottom: 1px solid transparent;
 }
 
-:focus > .selected > node-icon.anim-layer-bone,
-:focus > .selected > node-icon.anim-layer-image {
+:focus > .selected > node-icon.anim-layer-joint,
+:focus > .selected > node-icon.anim-layer-sprite {
   background-color: white;
 }
 
-.anim-layer-bone {
+.anim-layer-joint {
   background-color: var(--file-icon-color);
   -webkit-mask-image: url(images/animation_layer.png);
   -webkit-mask-size: 100% 200%;
   -webkit-mask-position: 0 0;
 }
 
-.anim-layer-image {
+.anim-layer-sprite {
   background-color: var(--file-icon-color);
   -webkit-mask-image: url(images/animation_layer.png);
   -webkit-mask-size: 100% 200%;
@@ -4331,6 +4332,11 @@ nav-item[value=particle].selected {
   position: absolute;
   width: 100%;
   height: 100%;
+}
+
+text.animation-motion-direction {
+  pointer-events: none;
+  color: var(--text-color-variable-init);
 }
 
 /* --------------------------------
@@ -5155,35 +5161,35 @@ nav-item[value=particle].selected {
 }
 
 /* --------------------------------
- * 动画 - 图像帧页面
+ * 动画 - 精灵帧页面
  * --------------------------------
  */
-#animImageFrame {
+#animSpriteFrame {
   display: flex;
   flex-direction: column;
   width: 100%;
   height: 100%;
 }
 
-#animImageFrame-tint-0-slider,
-#animImageFrame-tint-1-slider,
-#animImageFrame-tint-2-slider,
-#animImageFrame-tint-3-slider {
+#animSpriteFrame-tint-0-slider,
+#animSpriteFrame-tint-1-slider,
+#animSpriteFrame-tint-2-slider,
+#animSpriteFrame-tint-3-slider {
   flex: 2 1 auto;
 }
 
-#animImageFrame-tint-0,
-#animImageFrame-tint-1,
-#animImageFrame-tint-2,
-#animImageFrame-tint-3 {
+#animSpriteFrame-tint-0,
+#animSpriteFrame-tint-1,
+#animSpriteFrame-tint-2,
+#animSpriteFrame-tint-3 {
   flex: 1 1 auto;
 }
 
-#animImageFrame-sprite-detail {
+#animSpriteFrame-sprite-detail {
   flex-grow: 1;
 }
 
-#animImageFrame-sprite-summary {
+#animSpriteFrame-sprite-summary {
   display: flex;
   justify-content: space-between;
 }
@@ -5369,7 +5375,7 @@ nav-item[value=particle].selected {
   -webkit-mask-position: 0 0;
 }
 
-#palette-flip::after {
+#palette-mirror::after {
   -webkit-mask-image: url(images/animation_buttons.png);
   -webkit-mask-size: 100% 200%;
   -webkit-mask-position: 0 -100%;
@@ -5397,10 +5403,15 @@ nav-item[value=particle].selected {
   outline: var(--window-outline);
 }
 
+/* overflow: hidden 可禁用滚动快捷键 */
 #palette-screen {
   position: absolute;
   width: 100%;
   height: 100%;
+  overflow: hidden;
+}
+
+#palette-screen.scrollable {
   overflow: scroll;
 }
 
@@ -8839,25 +8850,6 @@ nav-item[value=particle].selected {
 }
 
 #project-cancel {
-  right: 10px;
-  bottom: 10px;
-}
-
-/* --------------------------------
- * 方向映射窗口
- * --------------------------------
- */
-#dirMap {
-  width: 324px;
-  height: 118px;
-}
-
-#dirMap-confirm {
-  right: 108px;
-  bottom: 10px;
-}
-
-#dirMap-cancel {
   right: 10px;
   bottom: 10px;
 }

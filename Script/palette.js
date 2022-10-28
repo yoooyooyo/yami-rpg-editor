@@ -89,8 +89,6 @@ const Palette = {
   switchEdit: null,
   saveToProject: null,
   loadFromProject: null,
-  // key status
-  spaceKey: false,
   // events
   windowResize: null,
   themechange: null,
@@ -1209,10 +1207,12 @@ Palette.switchScroll = function IIFE() {
   return function (enabled = !this.scrollable) {
     if (enabled) {
       item.addClass('selected')
+      this.screen.addClass('scrollable')
       this.screen.on('scroll', this.screenUserscroll)
       this.screen.off('userscroll', this.screenUserscroll)
     } else {
       item.removeClass('selected')
+      this.screen.removeClass('scrollable')
       this.screen.off('scroll', this.screenUserscroll)
       this.screen.on('userscroll', this.screenUserscroll)
     }
@@ -1332,9 +1332,11 @@ Palette.zoomInput = function (event) {
 
 // 屏幕 - 键盘按下事件
 Palette.screenKeydown = function (event) {
-  // 禁止空格键的浏览器滚动事件
-  if (event.code == 'Space') {
-    event.preventDefault()
+  switch (event.code) {
+    case 'Space':
+      // 阻止默认的下滚行为
+      event.preventDefault()
+      break
   }
   if (Palette.state === 'open' &&
     Palette.dragging === null) {
@@ -1444,26 +1446,8 @@ Palette.screenKeydown = function (event) {
         Palette.setZoom(2)
         break
     }
-  } else {
-    switch (event.code) {
-      case 'Space':
-        this.spaceKey = true
-        window.on('keyup', this.spaceKeyup)
-        break
-    }
   }
-}.bind(Palette)
-
-// Space键弹起事件
-Scene.spaceKeyup = function (event) {
-  if (!this.spaceKey || event === undefined) {
-    return
-  }
-  if (event.code === 'Space') {
-    this.spaceKey = false
-    window.off('keyup', this.spaceKeyup)
-  }
-}.bind(Scene)
+}
 
 // 屏幕 - 鼠标滚轮事件
 Palette.screenWheel = function IIFE() {
