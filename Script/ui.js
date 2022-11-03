@@ -4691,7 +4691,7 @@ UI.Window = class WindowElement extends UI.Element {
       element.resize()
       element.parent = this
     }
-    this.calculateScrollArea()
+    this._calculateScrollArea()
   }
 
   // 请求调整大小
@@ -4704,7 +4704,7 @@ UI.Window = class WindowElement extends UI.Element {
   })()
 
   // 计算滚动区域
-  calculateScrollArea() {
+  _calculateScrollArea() {
     const {max} = Math
     const {children} = this
     const {length} = children

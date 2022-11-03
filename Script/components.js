@@ -3265,13 +3265,18 @@ class SelectBox extends HTMLElement {
 
   // 写入数据(无效时写入默认值)
   write2(value) {
-    const items = this.dataItems
-    for (const item of items) {
+    for (const item of this.dataItems) {
       if (item.value === value) {
-        return this.write(value)
+        this.write(value)
+        return
       }
     }
-    return this.write(items[0].value)
+    this.writeDefault()
+  }
+
+  // 写入默认值
+  writeDefault() {
+    this.write(this.dataItems[0].value)
   }
 
   // 输入数据
@@ -4421,6 +4426,7 @@ class CustomBox extends HTMLElement {
 
   // 更新信息
   update() {
+    this.info.removeClass('invalid')
     const value = this.dataValue
     switch (this.type) {
       case 'file':
@@ -4458,6 +4464,8 @@ class CustomBox extends HTMLElement {
         return this.updatePresetElement(value)
       case 'array':
         return this.updateArray(value)
+      case 'attribute':
+        return this.updateAttribute(value)
       case 'attribute-group':
         return this.updateAttributeGroup(value)
       case 'enum-group':
@@ -4471,9 +4479,7 @@ class CustomBox extends HTMLElement {
   updateFile(guid) {
     Command.invalid = false
     this.info.textContent = Command.parseFileName(guid)
-    Command.invalid
-    ? this.info.addClass('invalid')
-    : this.info.removeClass('invalid')
+    if (Command.invalid) this.info.addClass('invalid')
   }
 
   // 更新图像剪辑信息
@@ -4564,15 +4570,28 @@ class CustomBox extends HTMLElement {
   updateAttributeGroup(groupId) {
     if (groupId === '') {
       this.info.textContent = Local.get('common.none')
-      this.info.removeClass('invalid')
       return
     }
     const group = Attribute.getGroup(groupId)
     if (group) {
       this.info.textContent = group.groupName
-      this.info.removeClass('invalid')
     } else {
       this.info.textContent = Command.parseUnlinkedId(groupId)
+      this.info.addClass('invalid')
+    }
+  }
+
+  // 更新属性信息
+  updateAttribute(attrId) {
+    if (attrId === '') {
+      this.info.textContent = Local.get('common.none')
+      return
+    }
+    const attribute = Attribute.getAttribute(attrId)
+    if (attribute) {
+      this.info.textContent = attribute.name
+    } else {
+      this.info.textContent = Command.parseUnlinkedId(attrId)
       this.info.addClass('invalid')
     }
   }
@@ -4581,13 +4600,11 @@ class CustomBox extends HTMLElement {
   updateEnumGroup(groupId) {
     if (groupId === '') {
       this.info.textContent = Local.get('common.none')
-      this.info.removeClass('invalid')
       return
     }
     const group = Enum.getEnumGroup(groupId)
     if (group) {
       this.info.textContent = group.groupName
-      this.info.removeClass('invalid')
     } else {
       this.info.textContent = Command.parseUnlinkedId(groupId)
       this.info.addClass('invalid')
@@ -4598,13 +4615,11 @@ class CustomBox extends HTMLElement {
   updateEnumString(stringId) {
     if (stringId === '') {
       this.info.textContent = Local.get('common.none')
-      this.info.removeClass('invalid')
       return
     }
     const string = Enum.getString(stringId)
     if (string) {
       this.info.textContent = string.name
-      this.info.removeClass('invalid')
     } else {
       this.info.textContent = Command.parseUnlinkedId(stringId)
       this.info.addClass('invalid')
@@ -4692,6 +4707,8 @@ class CustomBox extends HTMLElement {
         return PresetElement.open(this)
       case 'array':
         return ArrayList.open(this)
+      case 'attribute':
+        return Attribute.open(this, 'attribute')
       case 'attribute-group':
         return Attribute.open(this, 'group')
       case 'enum-group':
@@ -4991,6 +5008,154 @@ class StringVar extends HTMLElement {
 }
 
 customElements.define('string-var', StringVar)
+
+// ******************************** 选择变量框 ********************************
+
+class SelectVar extends HTMLElement {
+  mode    //:string
+  selectBox  //:element
+  varBox  //:element
+
+  constructor() {
+    super()
+
+    // 设置属性
+    this.mode = null
+    this.selectBox = new SelectBox()
+    this.varBox = new CustomBox()
+    this.varBox.setAttribute('type', 'variable')
+    this.varBox.setAttribute('filter', 'all')
+
+    // 侦听事件
+    this.on('keydown', this.keydown)
+    this.on('pointerdown', this.pointerdown)
+  }
+
+  // 读取数据
+  read() {
+    switch (this.mode) {
+      case 'constant': return this.selectBox.read()
+      case 'variable': return this.varBox.read()
+    }
+  }
+
+  // 写入数据
+  write(value) {
+    switch (typeof value) {
+      case 'string':
+        this.switch('constant')
+        this.selectBox.write(value)
+        this.varBox.write(SelectVar.defVar)
+        break
+      case 'object':
+        this.switch('variable')
+        this.selectBox.writeDefault()
+        this.varBox.write(value)
+        break
+    }
+  }
+
+  // 切换模式
+  switch(mode) {
+    const focus = !mode && !this.hasClass('disabled')
+    if (mode === undefined) {
+      switch (this.mode) {
+        case 'constant':
+          mode = 'variable'
+          break
+        case 'variable':
+          mode = 'constant'
+          break
+      }
+    }
+    if (this.mode !== mode) {
+      this.removeClass(this.mode)
+      this.addClass(mode)
+      this.mode = mode
+      switch (mode) {
+        case 'constant':
+          this.varBox.remove()
+          this.appendChild(this.selectBox)
+          if (focus) {
+            this.selectBox.focus()
+          }
+          break
+        case 'variable':
+          this.selectBox.remove()
+          this.appendChild(this.varBox)
+          if (focus) {
+            this.varBox.focus()
+          }
+          break
+      }
+    }
+  }
+
+  // 启用元素
+  enable() {
+    if (this.removeClass('disabled')) {
+      this.selectBox.enable()
+      this.varBox.enable()
+    }
+  }
+
+  // 禁用元素
+  disable() {
+    if (this.addClass('disabled')) {
+      this.selectBox.disable()
+      this.varBox.disable()
+    }
+  }
+
+  // 加载选项
+  loadItems(items) {
+    this.selectBox.loadItems(items)
+  }
+
+  // 获得焦点
+  getFocus(mode) {
+    switch (this.mode) {
+      case 'constant': return this.selectBox.getFocus(mode)
+      case 'variable': return this.varBox.getFocus(mode)
+    }
+  }
+
+  // 键盘按下事件
+  keydown(event) {
+    switch (event.code) {
+      case 'Slash':
+        // 切换输入框导致已侦听的事件失效
+        // 因此在这里阻止输入行为
+        event.preventDefault()
+        this.switch()
+        break
+    }
+  }
+
+  // 指针按下事件
+  pointerdown(event) {
+    switch (event.button) {
+      case 0:
+        if (!this.hasClass('disabled') &&
+          event.target === this) {
+          event.preventDefault()
+          this.switch()
+        }
+        break
+      case 2:
+        if (!this.hasClass('disabled')) {
+          event.preventDefault()
+          this.switch()
+        }
+        break
+    }
+  }
+
+  // 默认变量值
+  static defVar = {type: 'local', key: 'key'}
+}
+
+customElements.define('select-var', SelectVar)
 
 // ******************************** 文件变量框 ********************************
 
@@ -10869,11 +11034,16 @@ class ParameterPane extends HTMLElement {
         return wrap
       }
       case 'attribute':
-      case 'attribute-key': {
-        const wrap = this.createSelectBox()
-        wrap.input.loadItems(Attribute.getAttributeItems(parameter.filter))
-        return wrap
-      }
+      case 'attribute-key':
+        if (parameter.filter === 'any') {
+          const wrap = this.createCustomBox()
+          wrap.input.setAttribute('type', 'attribute')
+          return wrap
+        } else {
+          const wrap = this.createSelectBox()
+          wrap.input.loadItems(Attribute.getAttributeItems(parameter.filter, '', true))
+          return wrap
+        }
       case 'attribute-group': {
         const wrap = this.createCustomBox()
         wrap.input.setAttribute('type', 'attribute-group')
@@ -10887,7 +11057,7 @@ class ParameterPane extends HTMLElement {
           return wrap
         } else {
           const wrap = this.createSelectBox()
-          wrap.input.loadItems(Enum.getStringItems(parameter.filter))
+          wrap.input.loadItems(Enum.getStringItems(parameter.filter, true))
           return wrap
         }
       case 'enum-group': {
@@ -14403,7 +14573,6 @@ class FileBodyPane extends HTMLElement {
         filename += file.extname
       }
       if (filename !== file.name) {
-        item.nameBox.textContent = name
         const dir = Path.dirname(file.path)
         const path = File.route(`${dir}/${filename}`)
         // 当目标文件不存在或就是自己时重命名
@@ -14416,6 +14585,7 @@ class FileBodyPane extends HTMLElement {
             File.route(file.path),
             path,
           ).then(() => {
+            item.nameBox.textContent = name
             return Directory.update()
           })
         })

@@ -2047,6 +2047,10 @@ Scene.loadAllContexts = function () {
 
 // 加载角色上下文
 Scene.loadActorContext = function (actor) {
+  if (actor.player) {
+    actor.player.destroy()
+    delete actor.player
+  }
   const actorId = actor.actorId
   const data = Data.actors[actorId]
   if (data !== undefined) {
@@ -2103,6 +2107,10 @@ Scene.loadLightContext = function (light) {
 
 // 加载动画上下文
 Scene.loadAnimationContext = function (animation) {
+  if (animation.player) {
+    animation.player.destroy()
+    delete animation.player
+  }
   const animationId = animation.animationId
   const data = Data.animations[animationId]
   if (data !== undefined) {
@@ -2135,6 +2143,10 @@ Scene.loadAnimationContext = function (animation) {
 
 // 加载视差图上下文
 Scene.loadParallaxContext = function (parallax) {
+  if (parallax.player) {
+    parallax.player.destroy()
+    delete parallax.player
+  }
   Object.defineProperty(
     parallax, 'player', {
       configurable: true,

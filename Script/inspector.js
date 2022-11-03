@@ -3124,7 +3124,7 @@ return `/*
 */
 
 export default class Plugin {
-  start() {}
+  onStart() {}
 }`
 }
 

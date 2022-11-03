@@ -32,6 +32,7 @@ const Attribute = {
   getItemById: null,
   setFolderGroup: null,
   getGroup: null,
+  getAttribute: null,
   getGroupAttribute: null,
   getDefAttributeId: null,
   getAttributeItems: null,
@@ -315,6 +316,11 @@ Attribute.getGroup = function (groupKey) {
   return Data.attribute.context.getGroup(groupKey)
 }
 
+// 获取属性
+Attribute.getAttribute = function (attrId) {
+  return Data.attribute.context.getAttribute(attrId)
+}
+
 // 获取群组属性
 Attribute.getGroupAttribute = function (groupKey, attrId) {
   return Data.attribute.context.getGroupAttribute(groupKey, attrId)
@@ -326,8 +332,8 @@ Attribute.getDefAttributeId = function (groupKey) {
 }
 
 // 获取属性选项列表
-Attribute.getAttributeItems = function (groupKey, attrType) {
-  return Data.attribute.context.getAttributeItems(groupKey, attrType)
+Attribute.getAttributeItems = function (groupKey, attrType, allowNone) {
+  return Data.attribute.context.getAttributeItems(groupKey, attrType, allowNone)
 }
 
 // 打开属性面板
@@ -532,6 +538,12 @@ Attribute.listKeydown = function (event) {
 // 列表 - 指针按下事件
 Attribute.listPointerdown = function (event) {
   switch (event.button) {
+    case 0:
+      if (event.target === this) {
+        this.unselect()
+        Attribute.closePropertyPanel()
+      }
+      break
     case 3:
       this.cancelSearch()
       break
@@ -548,7 +560,7 @@ Attribute.listDoubleclick = function (event) {
       }
       break
     case 'attribute':
-      if (Attribute.list.read()?.value !== undefined) {
+      if (Attribute.list.read()?.key !== undefined) {
         event.stopPropagation()
         Attribute.confirm()
       }
@@ -809,20 +821,20 @@ Attribute.confirm = function (event) {
       break
     case 'group': {
       const item = this.list.read()
-      if (item?.class !== 'folder') {
+      if (item && item.class !== 'folder') {
         return this.list.getFocus()
       }
       this.apply()
-      this.target.input(item.id)
+      this.target.input(item ? item.id : '')
       break
     }
     case 'attribute': {
       const item = this.list.read()
-      if (item?.value === undefined) {
+      if (item && item.class === 'folder') {
         return this.list.getFocus()
       }
       this.apply()
-      this.target.input(item.id)
+      this.target.input(item ? item.id : '')
       break
     }
   }
@@ -1055,19 +1067,21 @@ Attribute.list.updateNoteIcon = function (item) {
 // ******************************** 属性上下文类 ********************************
 
 class AttributeContext {
+  itemMap   //:object
   groupMap  //:object
   itemCache //:object
   itemLists //:object
 
   constructor(attribute) {
+    const itemMap = {}
     const groupMap = {}
 
     // 加载数据
     const load = (groupKeys, items) => {
       for (const item of items) {
         const itemKey = item.id
+        itemMap[itemKey] = item
         if (item.class === 'folder') {
-          // 这里可能会创建用不到的属性分组
           groupMap[itemKey] = {
             groupName: item.name,
             itemMap: {},
@@ -1103,6 +1117,7 @@ class AttributeContext {
         }
       }
     }
+    this.itemMap = itemMap
     this.groupMap = groupMap
     this.itemCache = {}
     this.itemLists = {}
@@ -1111,6 +1126,11 @@ class AttributeContext {
   // 获取群组
   getGroup(groupKey) {
     return this.groupMap[groupKey]
+  }
+
+  // 获取属性
+  getAttribute(attrId) {
+    return this.itemMap[attrId]
   }
 
   // 获取群组属性
@@ -1124,8 +1144,11 @@ class AttributeContext {
   }
 
   // 获取属性选项列表
-  getAttributeItems(groupKey, attrType = '') {
-    const key = groupKey + attrType
+  getAttributeItems(groupKey, attrType = '', allowNone = false) {
+    let key = groupKey + attrType
+    if (allowNone) {
+      key += '-allowNone'
+    }
     if (!this.itemLists[key]) {
       // 获取分组的全部同类型选项
       const items = []
@@ -1148,6 +1171,12 @@ class AttributeContext {
             items.push(item)
           }
         }
+      }
+      if (allowNone) {
+        items.unshift({
+          name: Local.get('common.none'),
+          value: '',
+        })
       }
       if (items.length === 0) {
         items.push({
