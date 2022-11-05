@@ -609,6 +609,7 @@ Variable.listPopup = function (event) {
 Variable.listOpen = function (event) {
   if (event.value.class !== 'folder' &&
     Variable.target instanceof Object) {
+    Variable.target.getFocus?.()
     Variable.confirm()
   }
 }
@@ -757,7 +758,7 @@ Variable.confirm = function (event) {
       case 'number':
       case 'string':
       case 'object':
-        if (variable.type !== filter) {
+        if (typeof variable.value !== filter) {
           return $(`#variable-type-${filter}`).getFocus()
         }
         break

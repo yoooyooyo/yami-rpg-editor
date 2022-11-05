@@ -327,8 +327,8 @@ Attribute.getGroupAttribute = function (groupKey, attrId) {
 }
 
 // 获取默认属性ID
-Attribute.getDefAttributeId = function (groupKey) {
-  return Data.attribute.context.getDefAttributeId(groupKey)
+Attribute.getDefAttributeId = function (groupKey, type) {
+  return Data.attribute.context.getDefAttributeId(groupKey, type)
 }
 
 // 获取属性选项列表
@@ -555,12 +555,14 @@ Attribute.listDoubleclick = function (event) {
   switch (Attribute.mode) {
     case 'group':
       if (Attribute.list.read()?.class === 'folder') {
+        Attribute.target.getFocus?.()
         event.stopPropagation()
         Attribute.confirm()
       }
       break
     case 'attribute':
       if (Attribute.list.read()?.key !== undefined) {
+        Attribute.target.getFocus?.()
         event.stopPropagation()
         Attribute.confirm()
       }
@@ -1139,8 +1141,16 @@ class AttributeContext {
   }
 
   // 获取默认属性ID
-  getDefAttributeId(groupKey) {
-    return this.groupMap[groupKey]?.itemList[0]?.id ?? ''
+  getDefAttributeId(groupKey, type) {
+    const group = this.groupMap[groupKey]
+    if (group) {
+      for (const attr of group.itemList) {
+        if (!type || attr.type === type) {
+          return attr.id
+        }
+      }
+    }
+    return ''
   }
 
   // 获取属性选项列表

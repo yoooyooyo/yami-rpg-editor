@@ -109,6 +109,8 @@ GL.initialize = function () {
   this.height = this.drawingBufferHeight
   this.program = null
   this.binding = null
+  this.masking = false
+  this.depthTest = false
 
   // 设置光照对比度
   this.contrast = 0
@@ -137,6 +139,10 @@ GL.initialize = function () {
   // 创建模板纹理
   this.stencilTexture = this.stencilTexture ?? new Texture({format: this.ALPHA})
   this.stencilTexture.base.protected = true
+
+  // 创建遮罩纹理
+  this.maskTexture = this.maskTexture ?? new Texture({format: this.RGBA})
+  this.maskTexture.fbo = this.createTextureFBO(this.maskTexture)
 
   // 创建图层数组
   this.layers = this.layers ?? new Uint32Array(0x40000)
@@ -313,6 +319,8 @@ GL.createImageProgram = function () {
     precision   highp       float;
     varying     vec2        v_TexCoord;
     varying     vec3        v_LightColor;
+    uniform     vec2        u_Viewport;
+    uniform     int         u_Masking;
     uniform     float       u_Alpha;
     uniform     int         u_ColorMode;
     uniform     vec4        u_Color;
@@ -320,6 +328,7 @@ GL.createImageProgram = function () {
     uniform     vec4        u_Repeat;
     uniform     float       u_Contrast;
     uniform     sampler2D   u_Sampler;
+    uniform     sampler2D   u_MaskSampler;
     uniform     sampler2D   u_LightSampler;
 
     vec3 getLightColor() {
@@ -349,6 +358,10 @@ GL.createImageProgram = function () {
       }
       gl_FragColor.rgb *= getLightColor();
       gl_FragColor.a *= u_Alpha;
+      if (u_Masking == 1) {
+        vec2 fragCoord = vec2(gl_FragCoord.x, (u_Viewport.y - gl_FragCoord.y));
+        gl_FragColor.a *= texture2D(u_MaskSampler, fragCoord / u_Viewport).a;
+      }
     }
     `,
   )
@@ -367,11 +380,14 @@ GL.createImageProgram = function () {
   this.uniform1i(this.getUniformLocation(program, 'u_LightSampler'), this.maxTexUnits - 1)
 
   // 片元着色器属性
+  const u_Viewport = this.getUniformLocation(program, 'u_Viewport')
+  const u_Masking = this.getUniformLocation(program, 'u_Masking')
   const u_Alpha = this.getUniformLocation(program, 'u_Alpha')
   const u_ColorMode = this.getUniformLocation(program, 'u_ColorMode')
   const u_Color = this.getUniformLocation(program, 'u_Color')
   const u_Tint = this.getUniformLocation(program, 'u_Tint')
   const u_Repeat = this.getUniformLocation(program, 'u_Repeat')
+  const u_MaskSampler = this.getUniformLocation(program, 'u_MaskSampler')
 
   // 创建顶点数组对象
   const vao = this.createVertexArray()
@@ -397,6 +413,7 @@ GL.createImageProgram = function () {
       program.alpha = this.alpha
       this.uniform1f(u_Alpha, program.alpha)
     }
+    this.updateMasking()
     this.updateBlending()
     return program
   }
@@ -405,6 +422,7 @@ GL.createImageProgram = function () {
   program.use = use
   program.vao = vao
   program.alpha = 0
+  program.masking = false
   program.a_Position = a_Position
   program.a_TexCoord = a_TexCoord
   program.u_Matrix = u_Matrix
@@ -413,6 +431,9 @@ GL.createImageProgram = function () {
   program.u_LightMode = u_LightMode
   program.u_LightCoord = u_LightCoord
   program.u_LightTexSize = u_LightTexSize
+  program.u_Viewport = u_Viewport
+  program.u_Masking = u_Masking
+  program.u_MaskSampler = u_MaskSampler
   program.u_ColorMode = u_ColorMode
   program.u_Color = u_Color
   program.u_Tint = u_Tint
@@ -1169,6 +1190,29 @@ GL.reset = function () {
   this.matrix.reset()
 }
 
+// WebGL上下文方法 - 更新遮罩模式
+GL.updateMasking = function () {
+  if (this.program.masking !== this.masking) {
+    this.program.masking = this.masking
+    if (this.masking) {
+      this.uniform1i(this.program.u_Masking, 1)
+      this.uniform1i(this.program.u_MaskSampler, 1)
+      this.activeTexture(this.TEXTURE1)
+      this.bindTexture(this.TEXTURE_2D, this.maskTexture.base.glTexture)
+      this.activeTexture(this.TEXTURE0)
+    } else {
+      this.uniform1i(this.program.u_Masking, 0)
+      this.uniform1i(this.program.u_MaskSampler, 0)
+      this.activeTexture(this.TEXTURE1)
+      this.bindTexture(this.TEXTURE_2D, null)
+      this.activeTexture(this.TEXTURE0)
+    }
+  }
+  if (this.masking) {
+    this.uniform2f(this.program.u_Viewport, this.width, this.height)
+  }
+}
+
 // WebGL上下文方法 - 创建混合模式更新器
 GL.createBlendingUpdater = function () {
   // 开启混合功能
@@ -1402,6 +1446,7 @@ GL.resize = function (width, height) {
     this.width = width
     this.height = height
     this.viewport(0, 0, width, height)
+    this.maskTexture.resize(width, height)
   }
 }
 

@@ -324,7 +324,6 @@ const Local = {
   update: null,
   readLanguageList: null,
   setLanguage: null,
-  setFontSize: null,
   setProperties: null,
   setElement: null,
   createGetter: null,
@@ -434,7 +433,6 @@ Local.update = function IIFE() {
     }
   }
   return function (data) {
-    this.setFontSize(data.fontSize)
     this.setProperties(data.properties)
     const setElement = this.setElement
     const entries = Object.entries(data.components)
@@ -465,18 +463,6 @@ Local.update = function IIFE() {
     }
   }
 }()
-
-// 设置字体大小
-Local.setFontSize = function (fontSize) {
-  switch (fontSize) {
-    case 'large':
-      document.documentElement.addClass('font-size-large')
-      break
-    default:
-      document.documentElement.removeClass('font-size-large')
-      break
-  }
-}
 
 // 设置属性
 Local.setProperties = function IIFE() {
