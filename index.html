@@ -215,6 +215,7 @@
         <box id="animation-screen" tabindex="-1">
           <marquee-area id="animation-marquee"></marquee-area>
         </box>
+        <box id="animation-dirList"></box>
       </box>
     </page-frame>
 
@@ -361,12 +362,6 @@
         <!-- 文件 - 动画 -->
         <page-frame value="fileAnimation">
           <detail-box open>
-            <detail-summary>General</detail-summary>
-            <detail-grid id="fileAnimation-general-grid">
-              <text>Direction</text><select-box id="fileAnimation-mode"></select-box>
-            </detail-grid>
-          </detail-box>
-          <detail-box open>
             <detail-summary>Sprites</detail-summary>
             <param-list id="fileAnimation-sprites" class="inspector-list" flexible></param-list>
           </detail-box>
@@ -497,7 +492,6 @@
               <text>Priority</text><number-box id="fileTrigger-priority" min="-100" max="100"></number-box>
               <text>Offset Y</text><number-box id="fileTrigger-offsetY" min="-100" max="100" unit="px"></number-box>
               <text>Rotatable</text><select-box id="fileTrigger-rotatable"></select-box>
-              <text>Mappable</text><select-box id="fileTrigger-mappable"></select-box>
             </detail-grid>
           </detail-box>
           <detail-box open>
@@ -1314,6 +1308,7 @@
           <detail-box open>
             <detail-summary>Motion</detail-summary>
             <detail-grid id="animMotion-general-grid">
+              <text>Direction</text><select-box id="animMotion-mode"></select-box>
               <text>Loop</text><check-box id="animMotion-loop" class="standard large"></check-box>
               <text>Loop Start</text><number-box id="animMotion-loopStart" min="0" max="10000"></number-box>
             </detail-grid>
@@ -1883,7 +1878,7 @@
         <text class="project-label">Party Member 2</text><custom-box id="config-actor-partyMembers-1" type="file" filter="actor"></custom-box>
         <text class="project-label">Party Member 3</text><custom-box id="config-actor-partyMembers-2" type="file" filter="actor"></custom-box>
         <text class="project-label">Party Member 4</text><custom-box id="config-actor-partyMembers-3" type="file" filter="actor"></custom-box>
-        <text class="project-label">Party Bag Mode</text><select-box id="config-actor-partyBagMode"></select-box>
+        <text class="project-label">Party Inventory Mode</text><select-box id="config-actor-partyInventoryMode"></select-box>
         <text class="project-label">Temporary Attributes</text><param-list id="config-actor-tempAttributes" group="actor" flexible></param-list>
         <text id="config-animation-summary" class="project-summary">Animation</text>
         <text class="project-label">Frame Rate</text><number-box id="config-animation-frameRate" min="1" max="240" unit="fps"></number-box>
@@ -2475,9 +2470,6 @@
 <!-- 指令建议列表 -->
 <node-list id="command-suggestions" class="hidden"></node-list>
 
-<!-- 文本建议列表 -->
-<node-list id="text-suggestions" class="hidden"></node-list>
-
 <!-- 变量访问器窗口 -->
 <window-frame id="variableGetter">
   <title-bar>Variable<close></close></title-bar>
@@ -2523,6 +2515,7 @@
       <text>Type</text><select-box id="skillGetter-type"></select-box>
       <text>Actor</text><custom-box id="skillGetter-actor" type="actor"></custom-box>
       <text>Shortcut Key</text><select-box id="skillGetter-key"></select-box>
+      <text>Skill</text><custom-box id="skillGetter-skillId" type="file" filter="skill"></custom-box>
       <text>Variable</text><custom-box id="skillGetter-variable" type="variable" filter="object"></custom-box>
     </grid-box>
     <button id="skillGetter-confirm" name="confirm">Confirm</button>
@@ -2536,6 +2529,8 @@
   <content-frame>
     <grid-box>
       <text>Type</text><select-box id="stateGetter-type"></select-box>
+      <text>Actor</text><custom-box id="stateGetter-actor" type="actor"></custom-box>
+      <text>State</text><custom-box id="stateGetter-stateId" type="file" filter="state"></custom-box>
       <text>Variable</text><custom-box id="stateGetter-variable" type="variable" filter="object"></custom-box>
     </grid-box>
     <button id="stateGetter-confirm" name="confirm">Confirm</button>
@@ -2584,7 +2579,7 @@
       <text>Actor</text><custom-box id="positionGetter-actor" type="actor"></custom-box>
       <text>Trigger</text><custom-box id="positionGetter-trigger" type="trigger"></custom-box>
       <text>Light</text><custom-box id="positionGetter-light" type="light"></custom-box>
-      <text>Region</text><custom-box id="positionGetter-regionId" type="preset-object" filter="region"></custom-box>
+      <text>Object</text><custom-box id="positionGetter-objectId" type="preset-object" filter="any"></custom-box>
     </grid-box>
     <button id="positionGetter-confirm" name="confirm">Confirm</button>
     <button id="positionGetter-cancel" name="cancel">Cancel</button>
@@ -2640,6 +2635,7 @@
       <text>Type</text><select-box id="elementGetter-type"></select-box>
       <text>Ancestor</text><custom-box id="elementGetter-ancestor" type="ancestor-element"></custom-box>
       <text>Data ID</text><custom-box id="elementGetter-presetId" type="preset-element"></custom-box>
+      <text>Index</text><number-var id='elementGetter-index' min='0' max='10000'></number-var>
       <text>Variable</text><custom-box id="elementGetter-variable" type="variable" filter="object"></custom-box>
     </grid-box>
     <button id="elementGetter-confirm" name="confirm">Confirm</button>
@@ -2767,7 +2763,6 @@
       <text>Actor</text><custom-box id="setNumber-operand-common-actor" type="actor"></custom-box>
       <text>Skill</text><custom-box id="setNumber-operand-common-skill" type="skill"></custom-box>
       <text>State</text><custom-box id="setNumber-operand-common-state" type="state"></custom-box>
-      <text>Equipment</text><custom-box id="setNumber-operand-common-equipment" type="equipment"></custom-box>
       <text>Item</text><custom-box id="setNumber-operand-common-item" type="item"></custom-box>
       <text>Trigger</text><custom-box id="setNumber-operand-common-trigger" type="trigger"></custom-box>
       <text>Item</text><custom-box id="setNumber-operand-object-itemId" type="file" filter="item"></custom-box>
@@ -2778,7 +2773,7 @@
       <text>Max</text><number-var id="setNumber-operand-math-max" min="-1000000000" max="1000000000"></number-var>
       <text>Start Position</text><custom-box id="setNumber-operand-math-startPosition" type="position"></custom-box>
       <text>End Position</text><custom-box id="setNumber-operand-math-endPosition" type="position"></custom-box>
-      <text>Key</text><string-var id="setNumber-operand-cooldown-key"></string-var>
+      <text>Cooldown Key</text><string-var id="setNumber-operand-cooldown-key"></string-var>
       <text>Index</text><number-var id="setNumber-operand-list-index" min="0" max="1000000000"></number-var>
       <text>Param Name</text><string-var id="setNumber-operand-parameter-key"></string-var>
       <text>Data</text><select-box id="setNumber-operand-other-data"></select-box>
@@ -2819,10 +2814,6 @@
       <text>Index</text><number-var id="setString-operand-list-index" min="0" max="1000000000"></number-var>
       <text>Param Name</text><string-var id="setString-operand-parameter-key"></string-var>
       <text>Data</text><select-box id="setString-operand-other-data"></select-box>
-      <text>Variable</text><custom-box id="setString-operand-parse-timestamp-variable" type="variable" filter="number"></custom-box>
-      <text>Date Format</text><text-box id="setString-operand-parse-timestamp-format"></text-box>
-      <text>Image Width</text><number-box id="setString-operand-screenshot-width" min="64" max="3840" unit="px"></number-box>
-      <text>Image Height</text><number-box id="setString-operand-screenshot-height" min="64" max="3840" unit="px"></number-box>
     </grid-box>
     <button id="setString-confirm" name="confirm">Confirm</button>
     <button id="setString-cancel" name="cancel">Cancel</button>
@@ -2866,7 +2857,6 @@
       <text>Number</text><number-box id="setList-number" min="-1000000000" max="1000000000" decimals="10"></number-box>
       <text>String</text><text-area id="setList-string"></text-area>
       <text>Variable</text><custom-box id="setList-operand" type="variable" filter="all"></custom-box>
-      <text>Separator</text><string-var id="setList-separator"></string-var>
     </grid-box>
     <button id="setList-confirm" name="confirm">Confirm</button>
     <button id="setList-cancel" name="cancel">Cancel</button>
@@ -2941,6 +2931,8 @@
       <text>Light</text><custom-box id="if-condition-common-light" type="light"></custom-box>
       <text>Element</text><custom-box id="if-condition-common-element" type="element"></custom-box>
       <text>Operation</text><select-box id="if-condition-actor-operation"></select-box>
+      <text>Skill</text><custom-box id="if-condition-actor-skillId" type="file" filter="skill"></custom-box>
+      <text>State</text><custom-box id="if-condition-actor-stateId" type="file" filter="state"></custom-box>
       <text>Item</text><custom-box id="if-condition-actor-itemId" type="file" filter="item"></custom-box>
       <text>Equipment</text><custom-box id="if-condition-actor-equipmentId" type="file" filter="equipment"></custom-box>
       <text>Quantity</text><number-box id="if-condition-actor-quantity" min="1" max="10000"></number-box>
@@ -3024,7 +3016,6 @@
       <text>Actor</text><custom-box id="forEach-actor" type="actor"></custom-box>
       <text>Parent Element</text><custom-box id="forEach-element" type="element"></custom-box>
       <text>Save to Variable</text><custom-box id="forEach-variable" type="variable" filter="object"></custom-box>
-      <text>File Name</text><custom-box id="forEach-filename" type="variable" filter="string"></custom-box>
     </grid-box>
     <button id="forEach-confirm" name="confirm">Confirm</button>
     <button id="forEach-cancel" name="cancel">Cancel</button>
@@ -3176,7 +3167,6 @@
       <text>State</text><custom-box id="loadImage-state" type="state"></custom-box>
       <text>Equipment</text><custom-box id="loadImage-equipment" type="equipment"></custom-box>
       <text>Item</text><custom-box id="loadImage-item" type="item"></custom-box>
-      <text>Variable</text><custom-box id="loadImage-variable" type="variable" filter="string"></custom-box>
     </grid-box>
     <button id="loadImage-confirm" name="confirm">Confirm</button>
     <button id="loadImage-cancel" name="cancel">Cancel</button>
@@ -3548,7 +3538,6 @@
       <text>Priority</text><number-box id="playAnimation-priority" min="-100" max="100"></number-box>
       <text>Offset Y</text><number-box id="playAnimation-offsetY" min="-100" max="100" unit="px"></number-box>
       <text>Rotation</text><number-var id="playAnimation-rotation" min="-360" max="360" decimals="4" unit="deg"></number-var>
-      <text>Mappable</text><select-box id="playAnimation-mappable"></select-box>
       <text>Wait</text><select-box id="playAnimation-wait"></select-box>
     </grid-box>
     <button id="playAnimation-confirm" name="confirm">Confirm</button>
@@ -3834,6 +3823,31 @@
   </content-frame>
 </window-frame>
 
+<!-- 设置玩家角色 -->
+<window-frame id="setPlayerActor">
+  <title-bar>Set Player Actor<close></close></title-bar>
+  <content-frame>
+    <grid-box>
+      <text>Global Actor</text><custom-box id="setPlayerActor-actor" type="actor"></custom-box>
+    </grid-box>
+    <button id="setPlayerActor-confirm" name="confirm">Confirm</button>
+    <button id="setPlayerActor-cancel" name="cancel">Cancel</button>
+  </content-frame>
+</window-frame>
+
+<!-- 设置队伍成员 -->
+<window-frame id="setPartyMember">
+  <title-bar>Set Party Member<close></close></title-bar>
+  <content-frame>
+    <grid-box>
+      <text>Operation</text><select-box id="setPartyMember-operation"></select-box>
+      <text>Global Actor</text><custom-box id="setPartyMember-actor" type="actor"></custom-box>
+    </grid-box>
+    <button id="setPartyMember-confirm" name="confirm">Confirm</button>
+    <button id="setPartyMember-cancel" name="cancel">Cancel</button>
+  </content-frame>
+</window-frame>
+
 <!-- 改变角色队伍 -->
 <window-frame id="changeActorTeam">
   <title-bar>Change Actor Team<close></close></title-bar>
@@ -3889,6 +3903,19 @@
     </grid-box>
     <button id="changeActorSkill-confirm" name="confirm">Confirm</button>
     <button id="changeActorSkill-cancel" name="cancel">Cancel</button>
+  </content-frame>
+</window-frame>
+
+<!-- 改变角色动画 -->
+<window-frame id="changeActorAnimation">
+  <title-bar>Change Actor Animation<close></close></title-bar>
+  <content-frame>
+    <grid-box>
+      <text>Actor</text><custom-box id="changeActorAnimation-actor" type="actor"></custom-box>
+      <text>Animation</text><custom-box id="changeActorAnimation-animationId" type="file" filter="animation"></custom-box>
+    </grid-box>
+    <button id="changeActorAnimation-confirm" name="confirm">Confirm</button>
+    <button id="changeActorAnimation-cancel" name="cancel">Cancel</button>
   </content-frame>
 </window-frame>
 
@@ -4118,23 +4145,21 @@
 </window-frame>
 
 <!-- 设置包裹 -->
-<window-frame id="setBag">
-  <title-bar>Set Bag<close></close></title-bar>
+<window-frame id="setInventory">
+  <title-bar>Set Inventory<close></close></title-bar>
   <content-frame>
     <grid-box>
-      <text>Actor</text><custom-box id="setBag-actor" type="actor"></custom-box>
-      <text>Operation</text><select-box id="setBag-operation"></select-box>
-      <text>Money</text><number-var id="setBag-money" min="1" max="100000000"></number-var>
-      <text>Item</text><file-var id="setBag-itemId" type="file" filter="item"></file-var>
-      <text>Quantity</text><number-var id="setBag-quantity" min="1" max="10000"></number-var>
-      <text>Equipment</text><file-var id="setBag-equipmentId" type="file" filter="equipment"></file-var>
-      <text>Equipment</text><custom-box id="setBag-equipment" type="equipment"></custom-box>
-      <text>Index A</text><number-var id="setBag-index1" min="0" max="10000"></number-var>
-      <text>Index B</text><number-var id="setBag-index2" min="0" max="10000"></number-var>
-      <text>Global Actor</text><custom-box id="setBag-refActor" type="actor"></custom-box>
+      <text>Actor</text><custom-box id="setInventory-actor" type="actor"></custom-box>
+      <text>Operation</text><select-box id="setInventory-operation"></select-box>
+      <text>Money</text><number-var id="setInventory-money" min="1" max="100000000"></number-var>
+      <text>Item</text><file-var id="setInventory-itemId" type="file" filter="item"></file-var>
+      <text>Quantity</text><number-var id="setInventory-quantity" min="1" max="10000"></number-var>
+      <text>Equipment</text><file-var id="setInventory-equipmentId" type="file" filter="equipment"></file-var>
+      <text>Equipment</text><custom-box id="setInventory-equipment" type="equipment"></custom-box>
+      <text>Global Actor</text><custom-box id="setInventory-refActor" type="actor"></custom-box>
     </grid-box>
-    <button id="setBag-confirm" name="confirm">Confirm</button>
-    <button id="setBag-cancel" name="cancel">Cancel</button>
+    <button id="setInventory-confirm" name="confirm">Confirm</button>
+    <button id="setInventory-cancel" name="cancel">Cancel</button>
   </content-frame>
 </window-frame>
 
@@ -4191,8 +4216,8 @@
     <grid-box>
       <text>Actor</text><custom-box id="setShortcut-actor" type="actor"></custom-box>
       <text>Operation</text><select-box id="setShortcut-operation"></select-box>
-      <text>Item</text><custom-box id="setShortcut-item" type="item"></custom-box>
-      <text>Skill</text><custom-box id="setShortcut-skill" type="skill"></custom-box>
+      <text>Item</text><custom-box id="setShortcut-itemId" type="file" filter="item"></custom-box>
+      <text>Skill</text><custom-box id="setShortcut-skillId" type="file" filter="skill"></custom-box>
       <text>Shortcut Key</text><select-box id="setShortcut-key"></select-box>
     </grid-box>
     <button id="setShortcut-confirm" name="confirm">Confirm</button>
@@ -4217,8 +4242,10 @@
   <title-bar>Load Scene<close></close></title-bar>
   <content-frame>
     <grid-box>
-      <text>Type</text><select-box id="loadScene-type"></select-box>
-      <text>Scene</text><custom-box id="loadScene-sceneId" type="file" filter="scene"></custom-box>
+      <text>Scene</text><file-var id="loadScene-sceneId" type="file" filter="scene"></file-var>
+      <text>Transfer Player</text><select-box id="loadScene-transfer"></select-box>
+      <text>X</text><number-var id="loadScene-x" min="0" max="512" step="0.5" decimals="4"></number-var>
+      <text>Y</text><number-var id="loadScene-y" min="0" max="512" step="0.5" decimals="4"></number-var>
     </grid-box>
     <button id="loadScene-confirm" name="confirm">Confirm</button>
     <button id="loadScene-cancel" name="cancel">Cancel</button>
@@ -4343,20 +4370,6 @@
     </grid-box>
     <button id="switchCollisionSystem-confirm" name="confirm">Confirm</button>
     <button id="switchCollisionSystem-cancel" name="cancel">Cancel</button>
-  </content-frame>
-</window-frame>
-
-<!-- 游戏数据 -->
-<window-frame id="gameData">
-  <title-bar>Game Data<close></close></title-bar>
-  <content-frame>
-    <grid-box>
-      <text>Operation</text><select-box id="gameData-operation"></select-box>
-      <text>File Name</text><string-var id="gameData-filename"></string-var>
-      <text>Variables</text><text-box id="gameData-variables"></text-box>
-    </grid-box>
-    <button id="gameData-confirm" name="confirm">Confirm</button>
-    <button id="gameData-cancel" name="cancel">Cancel</button>
   </content-frame>
 </window-frame>
 

@@ -98,15 +98,17 @@ Inspector.initialize = function () {
     editor.owner?.setTarget(target)
   }
   History.processors['inspector-layer-change'] = (operation, data) => {
-    const {target, motion} = data
+    const {target, motion, direction} = data
     History.processors['inspector-change'](operation, data)
     Animation.setMotion(motion)
+    Animation.setDirection(direction)
     Animation.openLayer(target)
   }
   History.processors['inspector-frame-change'] = (operation, data) => {
-    const {target, motion} = data
+    const {target, motion, direction} = data
     History.processors['inspector-change'](operation, data)
     Animation.setMotion(motion)
+    Animation.setDirection(direction)
     Animation.selectFrame(target)
   }
   History.processors['inspector-param-insert'] = (operation, data) => {
@@ -790,9 +792,6 @@ Inspector.fileUI = FileUI}
   create: null,
   open: null,
   close: null,
-  update: null,
-  // events
-  paramInput: null,
 }
 
 // 初始化
@@ -812,32 +811,16 @@ FileAnimation.initialize = function () {
     },
   }
 
-  // 创建动画模式选项
-  $('#fileAnimation-mode').loadItems([
-    {name: '1 Directional', value: '1-dir'},
-    {name: '2 Directional', value: '2-dir'},
-    {name: '4 Directional', value: '4-dir'},
-    {name: '8 Directional', value: '8-dir'},
-    {name: '1 Directional - Mirror', value: '1-dir-mirror'},
-    {name: '3 Directional - Mirror', value: '3-dir-mirror'},
-    {name: '5 Directional - Mirror', value: '5-dir-mirror'},
-  ])
-
   // 绑定精灵图列表
   $('#fileAnimation-sprites').bind(this.sprites)
 
   // 侦听事件
-  const elements = $('#fileAnimation-mode')
-  elements.on('input', this.paramInput)
-  elements.on('focus', Inspector.inputFocus)
-  elements.on('blur', Inspector.inputBlur(this, this.owner))
   $('#fileAnimation-sprites').on('change', Animation.listChange)
 }
 
 // 创建动画
 FileAnimation.create = function () {
   return {
-    mode: '1-dir-mirror',
     sprites: [],
     motions: [],
   }
@@ -853,7 +836,6 @@ FileAnimation.open = function (animation) {
 
     // 写入数据
     const write = getElementWriter('fileAnimation', animation)
-    write('mode')
     write('sprites')
   }
 }
@@ -866,28 +848,6 @@ FileAnimation.close = function () {
     // 更新按钮样式
     this.button.removeClass('selected')
   }
-}
-
-// 更新数据
-FileAnimation.update = function (animation, key, value) {
-  Animation.planToSave()
-  switch (key) {
-    case 'mode':
-      if (animation.mode !== value) {
-        animation.mode = value
-        Animation.list.updateDirections(true)
-        break
-      }
-  }
-}
-
-// 参数 - 输入事件
-FileAnimation.paramInput = function (event) {
-  FileAnimation.update(
-    FileAnimation.target,
-    Inspector.getKey(this),
-    this.read(),
-  )
 }
 
 // 精灵图列表接口
@@ -1290,7 +1250,7 @@ FileActor.update = function (actor, key, value) {
           for (const {player} of Scene.actors) {
             if (player?.data === animation) {
               player.reset()
-              player.switch(value, player.suffix)
+              player.setMotion(value)
             }
           }
           Scene.requestRendering()
@@ -1666,12 +1626,6 @@ FileTrigger.initialize = function () {
     {name: 'No', value: false},
   ])
 
-  // 创建动画方向映射选项
-  $('#fileTrigger-mappable').loadItems([
-    {name: 'Yes', value: true},
-    {name: 'No', value: false},
-  ])
-
   // 绑定事件列表
   $('#fileTrigger-events').bind(new EventListInterface())
 
@@ -1689,8 +1643,8 @@ FileTrigger.initialize = function () {
     #fileTrigger-hitMode, #fileTrigger-hitInterval,
     #fileTrigger-initialDelay, #fileTrigger-effectiveTime, #fileTrigger-duration,
     #fileTrigger-animationId, #fileTrigger-motion,
-    #fileTrigger-priority, #fileTrigger-offsetY, #fileTrigger-rotatable,
-    #fileTrigger-mappable`).on('input', this.paramInput)
+    #fileTrigger-priority, #fileTrigger-offsetY, #fileTrigger-rotatable
+  `).on('input', this.paramInput)
   $('#fileTrigger-events, #fileTrigger-scripts').on('change', this.listChange)
 }
 
@@ -1715,7 +1669,6 @@ FileTrigger.create = function () {
     priority: 0,
     offsetY: 0,
     rotatable: true,
-    mappable: false,
     events: [],
     scripts: [],
   }
@@ -1749,7 +1702,6 @@ FileTrigger.open = function (trigger, meta) {
     write('priority')
     write('offsetY')
     write('rotatable')
-    write('mappable')
     write('events')
     write('scripts')
   }
@@ -1833,7 +1785,6 @@ FileTrigger.update = function (trigger, key, value) {
     case 'priority':
     case 'offsetY':
     case 'rotatable':
-    case 'mappable':
       if (trigger[key] !== value) {
         trigger[key] = value
       }
@@ -3319,9 +3270,7 @@ SceneActor.update = function (actor, key, value) {
       if (actor.angle !== value) {
         actor.angle = value
         if (actor.player) {
-          const params = actor.player.getDirParamsByAngle(value)
-          actor.player.switch(actor.data.idleMotion, params.suffix)
-          actor.player.mirror = params.mirror
+          actor.player.setAngle(Math.radians(value))
         }
       }
       break
@@ -3866,7 +3815,7 @@ SceneAnimation.update = function (animation, key, value) {
     case 'motion':
       if (animation.motion !== value) {
         animation.motion = value
-        if (animation.player.switch(value)) {
+        if (animation.player.setMotion(value)) {
           animation.player.restart()
         }
       }
@@ -6349,8 +6298,10 @@ Inspector.uiElement = UIElement}
   // methods
   initialize: null,
   create: null,
+  createDir: null,
   open: null,
   close: null,
+  write: null,
   update: null,
   // events
   paramInput: null,
@@ -6366,11 +6317,24 @@ AnimMotion.initialize = function () {
     }
   }
 
+  // 创建动画模式选项
+  $('#animMotion-mode').loadItems([
+    {name: '1 Directional', value: '1-dir'},
+    {name: '2 Directional', value: '2-dir'},
+    {name: '4 Directional', value: '4-dir'},
+    {name: '8 Directional', value: '8-dir'},
+    {name: '1 Directional - Mirror', value: '1-dir-mirror'},
+    {name: '3 Directional - Mirror', value: '3-dir-mirror'},
+    {name: '5 Directional - Mirror', value: '5-dir-mirror'},
+  ])
+
   // 设置循环关联元素
   $('#animMotion-loop').relate([$('#animMotion-loopStart')])
 
   // 侦听事件
+  const elMode = $('#animMotion-mode')
   const elements = $('#animMotion-loop, #animMotion-loopStart')
+  elMode.on('input', this.paramInput)
   elements.on('input', this.paramInput)
   elements.on('focus', Inspector.inputFocus)
   elements.on('blur', Inspector.inputBlur(this, Animation))
@@ -6381,9 +6345,16 @@ AnimMotion.create = function (motionId) {
   return {
     class: 'motion',
     id: motionId,
-    direction: Animation.mode === '1-dir' ? 'fixed' : 'right',
+    mode: '1-dir',
     loop: false,
     loopStart: 0,
+    dirCases: [this.createDir()],
+  }
+}
+
+// 创建方向
+AnimMotion.createDir = function () {
+  return {
     layers: [Inspector.animSpriteLayer.create()],
   }
 }
@@ -6395,6 +6366,7 @@ AnimMotion.open = function (motion) {
 
     // 写入数据
     const write = getElementWriter('animMotion', motion)
+    write('mode')
     write('loop')
     write('loopStart')
   }
@@ -6410,10 +6382,23 @@ AnimMotion.close = function () {
   }
 }
 
+// 写入数据
+AnimMotion.write = function (options) {
+  if (options.mode !== undefined) {
+    $('#animMotion-mode').write(options.mode)
+  }
+}
+
 // 更新数据
 AnimMotion.update = function (motion, key, value) {
   Animation.planToSave()
   switch (key) {
+    case 'mode':
+      if (motion.mode !== value) {
+        Animation.setMotionMode(value)
+        Animation.createDirItems()
+        break
+      }
     case 'loop':
       if (motion.loop !== value) {
         motion.loop = value
@@ -6490,6 +6475,7 @@ AnimJointFrame.initialize = function () {
     this, Animation, data => {
       data.type = 'inspector-frame-change'
       data.motion = this.motion
+      data.direction = Animation.direction
     },
   ))
 }
@@ -6626,6 +6612,7 @@ AnimSpriteLayer.initialize = function () {
     this, Animation, data => {
       data.type = 'inspector-layer-change'
       data.motion = this.motion
+      data.direction = Animation.direction
     },
   ))
 }
@@ -6735,6 +6722,7 @@ AnimSpriteFrame.initialize = function () {
     this, Animation, data => {
       data.type = 'inspector-frame-change'
       data.motion = this.motion
+      data.direction = Animation.direction
     },
   ))
   sliders.on('focus', Inspector.sliderFocus)
@@ -6888,6 +6876,7 @@ AnimParticleLayer.initialize = function () {
     this, Animation, data => {
       data.type = 'inspector-layer-change'
       data.motion = this.motion
+      data.direction = Animation.direction
     },
   ))
 }
@@ -6986,6 +6975,7 @@ AnimParticleFrame.initialize = function () {
     this, Animation, data => {
       data.type = 'inspector-frame-change'
       data.motion = this.motion
+      data.direction = Animation.direction
     },
   ))
 }

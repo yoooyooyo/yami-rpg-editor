@@ -29,6 +29,7 @@ const Command = {
   parseSpriteName: null,
   parseEventType: null,
   parseEnumString: null,
+  parseEnumStringTag: null,
   parseGroupEnumString: null,
   parseListItem: null,
   parseParameter: null,
@@ -37,7 +38,6 @@ const Command = {
   parseState: null,
   parseEquipment: null,
   parseItem: null,
-  parseRegion: null,
   parsePosition: null,
   parseAngle: null,
   parseDegrees: null,
@@ -68,7 +68,6 @@ Command.initialize = function () {
 
   // 初始化相关对象
   CommandSuggestion.initialize()
-  TextSuggestion.initialize()
   VariableGetter.initialize()
   ActorGetter.initialize()
   SkillGetter.initialize()
@@ -358,6 +357,11 @@ Command.parseEnumString = function (stringId) {
   return Command.parseUnlinkedId(stringId)
 }
 
+// 解析枚举字符串标签
+Command.parseEnumStringTag = function (stringId) {
+  return `<${Command.parseEnumString(stringId)}>`
+}
+
 // 解析群组枚举字符串
 Command.parseGroupEnumString = function (groupKey, stringId) {
   if (stringId === '') return Local.get('common.none')
@@ -398,12 +402,8 @@ Command.parseActor = function (actor) {
       return `${Local.get('actor.member')}.${actor.memberId + 1}`
     case 'global':
       return Command.parseFileName(actor.actorId)
-    case 'by-id': {
-      const label = Local.get('actor.common')
-      const prop = Local.get('actor.by-id')
-      const preset = Command.parsePresetObject(actor.presetId)
-      return `${label}(${prop}:${preset})`
-    }
+    case 'by-id':
+      return Command.parsePresetObject(actor.presetId)
     case 'variable': {
       const label = Local.get('actor.common')
       const prop = Local.get('actor.variable')
@@ -427,6 +427,11 @@ Command.parseSkill = function (skill) {
       const key = Command.parseGroupEnumString('shortcut-key', skill.key)
       return `${actor} -> ${label}(${prop}:${key})`
     }
+    case 'by-id': {
+      const actor = Command.parseActor(skill.actor)
+      const file = Command.parseFileName(skill.skillId)
+      return `${actor} -> ${file}`
+    }
     case 'variable': {
       const label = Local.get('skill.common')
       const prop = Local.get('skill.variable')
@@ -443,6 +448,11 @@ Command.parseState = function (state) {
       return Local.get('state.trigger')
     case 'latest':
       return Local.get('state.latest')
+    case 'by-id': {
+      const actor = Command.parseActor(state.actor)
+      const file = Command.parseFileName(state.stateId)
+      return `${actor} -> ${file}`
+    }
     case 'variable': {
       const label = Local.get('state.common')
       const prop = Local.get('state.variable')
@@ -498,11 +508,6 @@ Command.parseItem = function (item) {
   }
 }
 
-// 解析区域
-Command.parseRegion = function (regionId) {
-  return this.parsePresetObject(regionId)
-}
-
 // 解析位置
 Command.parsePosition = function (position) {
   switch (position.type) {
@@ -522,8 +527,8 @@ Command.parsePosition = function (position) {
       return `${Local.get('position.common')}(${this.parseTrigger(position.trigger)})`
     case 'light':
       return `${Local.get('position.common')}(${this.parseLight(position.light)})`
-    case 'region':
-      return `${Local.get('position.common')}(${this.parseRegion(position.regionId)})`
+    case 'object':
+      return `${Local.get('position.common')}(${this.parsePresetObject(position.objectId)})`
   }
 }
 
@@ -573,12 +578,8 @@ Command.parseLight = function (light) {
       return Local.get('light.trigger')
     case 'latest':
       return Local.get('light.latest')
-    case 'by-id': {
-      const label = Local.get('light.common')
-      const prop = Local.get('light.by-id')
-      const preset = Command.parsePresetObject(light.presetId)
-      return `${label}(${prop}:${preset})`
-    }
+    case 'by-id':
+      return Command.parsePresetObject(light.presetId)
     case 'variable': {
       const label = Local.get('light.common')
       const prop = Local.get('light.variable')
@@ -595,19 +596,19 @@ Command.parseElement = function (element) {
       return Local.get('element.trigger')
     case 'latest':
       return Local.get('element.latest')
-    case 'by-id': {
-      const label = Local.get('element.common')
-      const prop = Local.get('element.by-id')
-      const preset = Command.parsePresetElement(element.presetId, false)
-      return `${label}(${prop}:${preset})`
-    }
+    case 'by-id':
+      return Command.parsePresetElement(element.presetId, false)
     case 'by-ancestor-and-id': {
       const ancestor = Command.parseElement(element.ancestor)
-      const label = Local.get('element.common')
-      const prop = Local.get('element.by-id')
-      const preset = Command.parsePresetElement(element.presetId, false)
-      const descendant = `${label}(${prop}:${preset})`
+      const descendant = Command.parsePresetElement(element.presetId, false)
       return `${ancestor} -> ${descendant}`
+    }
+    case 'by-index': {
+      const parent = Command.parseElement(element.parent)
+      const label = Local.get('element.common')
+      const index = Command.parseVariableNumber(element.index)
+      const child = `${label}[${index}]`
+      return `${parent} -> ${child}`
     }
     case 'variable': {
       const label = Local.get('element.common')
@@ -1451,25 +1452,12 @@ Command.cases.setString = {
     // 创建其他数据选项
     $('#setString-operand-other-data').loadItems([
       {name: 'Event Trigger Key', value: 'trigger-key'},
-      {name: 'Parse Timestamp', value: 'parse-timestamp'},
-      {name: 'Screenshot(Base64)', value: 'screenshot'},
-      {name: 'ShowText Content', value: 'showText-content'},
-      {name: 'ShowChoices Content 1', value: 'showChoices-content-0'},
-      {name: 'ShowChoices Content 2', value: 'showChoices-content-1'},
-      {name: 'ShowChoices Content 3', value: 'showChoices-content-2'},
-      {name: 'ShowChoices Content 4', value: 'showChoices-content-3'},
-    ])
-
-    // 设置其他数据关联元素
-    $('#setString-operand-other-data').enableHiddenMode().relate([
-      {case: 'parse-timestamp', targets: [
-        $('#setString-operand-parse-timestamp-variable'),
-        $('#setString-operand-parse-timestamp-format')
-      ]},
-      {case: 'screenshot', targets: [
-        $('#setString-operand-screenshot-width'),
-        $('#setString-operand-screenshot-height')
-      ]},
+      {name: 'Start Position - Scene ID', value: 'start-position-scene-id'},
+      {name: 'Show Text - Content', value: 'showText-content'},
+      {name: 'Show Choices - Content 1', value: 'showChoices-content-0'},
+      {name: 'Show Choices - Content 2', value: 'showChoices-content-1'},
+      {name: 'Show Choices - Content 3', value: 'showChoices-content-2'},
+      {name: 'Show Choices - Content 4', value: 'showChoices-content-3'},
     ])
   },
 
@@ -1515,10 +1503,6 @@ Command.cases.setString = {
     let listIndex = 0
     let parameterKey = ''
     let otherData = 'trigger-key'
-    let parseTimestampVariable = {type: 'local', key: ''}
-    let parseTimestampFormat = '{Y}-{M}-{D} {h}:{m}:{s}'
-    let screenshotWidth = 320
-    let screenshotHeight = 180
     switch (operand.type) {
       case 'constant':
         constantValue = operand.value
@@ -1562,10 +1546,6 @@ Command.cases.setString = {
         break
       case 'other':
         otherData = operand.data
-        parseTimestampVariable = operand.variable ?? parseTimestampVariable
-        parseTimestampFormat = operand.format ?? parseTimestampFormat
-        screenshotWidth = operand.width ?? screenshotWidth
-        screenshotHeight = operand.height ?? screenshotHeight
         break
     }
     const write = getElementWriter('setString')
@@ -1595,10 +1575,6 @@ Command.cases.setString = {
     write('operand-list-index', listIndex)
     write('operand-parameter-key', parameterKey)
     write('operand-other-data', otherData)
-    write('operand-parse-timestamp-variable', parseTimestampVariable)
-    write('operand-parse-timestamp-format', parseTimestampFormat)
-    write('operand-screenshot-width', screenshotWidth)
-    write('operand-screenshot-height', screenshotHeight)
     $('#setString-variable').getFocus()
   },
 
@@ -1733,26 +1709,7 @@ Command.cases.setString = {
       }
       case 'other': {
         const data = read('operand-other-data')
-        switch (data) {
-          case 'parse-timestamp': {
-            const variable = read('operand-parse-timestamp-variable')
-            const format = read('operand-parse-timestamp-format')
-            if (VariableGetter.isNone(variable)) {
-              return $('#setString-operand-parse-timestamp-variable').getFocus()
-            }
-            operand = {type, data, variable, format}
-            break
-          }
-          case 'screenshot': {
-            const width = read('operand-screenshot-width')
-            const height = read('operand-screenshot-height')
-            operand = {type, data, width, height}
-            break
-          }
-          default:
-            operand = {type, data}
-            break
-        }
+        operand = {type, data}
         break
       }
     }
@@ -1797,12 +1754,6 @@ Command.cases.setString = {
     }
   },
 
-  // 解析枚举字符串
-  parseEnumString: function (operand) {
-    const name = Command.parseEnumString(operand.stringId)
-    return `${Local.get('command.setString.enum')}(${name})`
-  },
-
   // 解析对象属性
   parseObjectProperty: function (operand) {
     const property = Local.get('command.setString.object.' + operand.property)
@@ -1835,19 +1786,13 @@ Command.cases.setString = {
     const label = Local.get('command.setString.other.' + operand.data)
     switch (operand.data) {
       case 'trigger-key':
+      case 'start-position-scene-id':
       case 'showText-content':
       case 'showChoices-content-0':
       case 'showChoices-content-1':
       case 'showChoices-content-2':
       case 'showChoices-content-3':
         return label
-      case 'parse-timestamp': {
-        const variable = Command.parseVariable(operand.variable)
-        const format = Command.parseVariableString(operand.format)
-        return `${label}(${variable}, ${format})`
-      }
-      case 'screenshot':
-        return `${label}(${operand.width}, ${operand.height})`
     }
   },
 
@@ -1861,7 +1806,7 @@ Command.cases.setString = {
       case 'string':
         return this.parseStringMethod(operand)
       case 'enum':
-        return this.parseEnumString(operand)
+        return Command.parseEnumStringTag(operand.stringId)
       case 'object':
         return this.parseObjectProperty(operand)
       case 'element':
@@ -2115,10 +2060,9 @@ Command.cases.setList = {
       {name: 'Set Boolean', value: 'set-boolean'},
       {name: 'Set Number', value: 'set-number'},
       {name: 'Set String', value: 'set-string'},
-      {name: 'Read Variable', value: 'set-variable'},
+      {name: 'Set Variable', value: 'set-variable'},
       {name: 'Push', value: 'push'},
       {name: 'Remove', value: 'remove'},
-      {name: 'Split String', value: 'split'},
     ])
 
     // 设置操作关联元素
@@ -2148,10 +2092,6 @@ Command.cases.setList = {
       {case: ['push', 'remove'], targets: [
         $('#setList-operand'),
       ]},
-      {case: 'split', targets: [
-        $('#setList-operand'),
-        $('#setList-separator'),
-      ]},
     ])
 
     // 创建布尔值常量选项
@@ -2160,7 +2100,7 @@ Command.cases.setList = {
       {name: 'True', value: true},
     ])
   },
-  parse: function ({variable, operation, list, index, constant, operand, separator}) {
+  parse: function ({variable, operation, list, index, constant, operand}) {
     let info
     const varName = Command.parseVariable(variable)
     switch (operation) {
@@ -2196,13 +2136,6 @@ Command.cases.setList = {
       case 'remove':
         info = `${varName} -= ${Command.parseVariable(operand)}`
         break
-      case 'split': {
-        const label = Local.get('command.setList.split')
-        const text1 = Command.parseVariable(operand)
-        const text2 = Command.parseVariableString(separator)
-        info = `${varName} = ${label}(${text1}, ${text2})`
-        break
-      }
     }
     return [
       {color: 'variable'},
@@ -2217,7 +2150,6 @@ Command.cases.setList = {
     index     = 0,
     constant  = 0,
     operand   = {type: 'local', key: ''},
-    separator = ''
   }) {
     let numbers = []
     let strings = []
@@ -2251,7 +2183,6 @@ Command.cases.setList = {
     write('number', number)
     write('string', string)
     write('operand', operand)
-    write('separator', separator)
     $('#setList-variable').getFocus()
   },
   save: function () {
@@ -2315,15 +2246,6 @@ Command.cases.setList = {
           return $('#setList-operand').getFocus()
         }
         Command.save({variable, operation, operand})
-        break
-      }
-      case 'split': {
-        const operand = read('operand')
-        if (VariableGetter.isNone(operand)) {
-          return $('#setList-operand').getFocus()
-        }
-        const separator = read('separator')
-        Command.save({variable, operation, operand, separator})
         break
       }
     }
@@ -2569,9 +2491,8 @@ Command.cases.forEach = {
       {name: 'Skill', value: 'skill'},
       {name: 'State', value: 'state'},
       {name: 'Equipment', value: 'equipment'},
-      {name: 'Bag', value: 'bag'},
+      {name: 'Inventory', value: 'inventory'},
       {name: 'Element', value: 'element'},
-      {name: 'Save Data', value: 'save'},
     ])
 
     // 设置数据关联元素
@@ -2580,16 +2501,13 @@ Command.cases.forEach = {
         $('#forEach-list'),
         $('#forEach-variable'),
       ]},
-      {case: ['skill', 'state', 'equipment', 'bag'], targets: [
+      {case: ['skill', 'state', 'equipment', 'inventory'], targets: [
         $('#forEach-actor'),
         $('#forEach-variable'),
       ]},
       {case: 'element', targets: [
         $('#forEach-element'),
         $('#forEach-variable'),
-      ]},
-      {case: 'save', targets: [
-        $('#forEach-filename'),
       ]},
     ])
 
@@ -2598,7 +2516,7 @@ Command.cases.forEach = {
       this.commands = null
     })
   },
-  parse: function ({data, list, actor, element, variable, filename, commands}) {
+  parse: function ({data, list, actor, element, variable, commands}) {
     const dataInfo = Local.get('command.forEach.' + data)
     const words = Command.words
     switch (data) {
@@ -2611,7 +2529,7 @@ Command.cases.forEach = {
       case 'skill':
       case 'state':
       case 'equipment':
-      case 'bag': {
+      case 'inventory': {
         const varName = Command.parseVariable(variable)
         const actorInfo = Command.parseActor(actor)
         words.push(`${varName} = ${actorInfo} -> ${dataInfo}`)
@@ -2623,9 +2541,6 @@ Command.cases.forEach = {
         words.push(`${varName} = ${elInfo} -> ${dataInfo}`)
         break
       }
-      case 'save':
-        words.push(`{${Command.parseVariable(filename)}, ...} = ${dataInfo}`)
-        break
     }
     return [
       {color: 'flow'},
@@ -2641,7 +2556,6 @@ Command.cases.forEach = {
     actor     = {type: 'trigger'},
     element   = {type: 'trigger'},
     variable  = {type: 'local', key: ''},
-    filename  = {type: 'local', key: ''},
     commands  = [],
   }) {
     const write = getElementWriter('forEach')
@@ -2650,7 +2564,6 @@ Command.cases.forEach = {
     write('actor', actor)
     write('element', element)
     write('variable', variable)
-    write('filename', filename)
     Command.cases.forEach.commands = commands
     $('#forEach-data').getFocus()
   },
@@ -2674,7 +2587,7 @@ Command.cases.forEach = {
       case 'skill':
       case 'state':
       case 'equipment':
-      case 'bag': {
+      case 'inventory': {
         const actor = read('actor')
         const variable = read('variable')
         if (VariableGetter.isNone(variable)) {
@@ -2690,14 +2603,6 @@ Command.cases.forEach = {
           return $('#forEach-variable').getFocus()
         }
         Command.save({data, element, variable, commands})
-        break
-      }
-      case 'save': {
-        const filename = read('filename')
-        if (VariableGetter.isNone(filename)) {
-          return $('#forEach-filename').getFocus()
-        }
-        Command.save({data, filename, commands})
         break
       }
     }
@@ -3324,7 +3229,6 @@ Command.cases.loadImage = {
       {name: 'State Icon', value: 'state-icon'},
       {name: 'Equipment Icon', value: 'equipment-icon'},
       {name: 'Item Icon', value: 'item-icon'},
-      {name: 'Base64 Image', value: 'base64'},
     ])
 
     // 设置类型关联元素
@@ -3344,12 +3248,9 @@ Command.cases.loadImage = {
       {case: 'item-icon', targets: [
         $('#loadImage-item'),
       ]},
-      {case: 'base64', targets: [
-        $('#loadImage-variable'),
-      ]},
     ])
   },
-  parse: function ({element, type, actor, skill, state, equipment, item, variable}) {
+  parse: function ({element, type, actor, skill, state, equipment, item}) {
     const words = Command.words
     .push(Command.parseElement(element))
     const label = Local.get('command.loadImage.' + type)
@@ -3370,9 +3271,6 @@ Command.cases.loadImage = {
       case 'item-icon':
         object = Command.parseItem(item)
         break
-      case 'base64':
-        object = Command.parseVariable(variable)
-        break
     }
     words.push(`${label}(${object})`)
     return [
@@ -3389,7 +3287,6 @@ Command.cases.loadImage = {
     state     = {type: 'trigger'},
     equipment = {type: 'trigger'},
     item      = {type: 'trigger'},
-    variable  = {type: 'local', key: ''},
   }) {
     const write = getElementWriter('loadImage')
     write('element', element)
@@ -3399,7 +3296,6 @@ Command.cases.loadImage = {
     write('state', state)
     write('equipment', equipment)
     write('item', item)
-    write('variable', variable)
     $('#loadImage-element').getFocus()
   },
   save: function () {
@@ -3430,14 +3326,6 @@ Command.cases.loadImage = {
       case 'item-icon': {
         const item = read('item')
         Command.save({element, type, item})
-        break
-      }
-      case 'base64': {
-        const variable = read('variable')
-        if (VariableGetter.isNone(variable)) {
-          return $('#loadImage-variable').getFocus()
-        }
-        Command.save({element, type, variable})
         break
       }
     }
@@ -3545,7 +3433,7 @@ Command.cases.tintImage = {
     tint      = [0, 0, 0, 0],
     easingId  = Data.easings[0].id,
     duration  = 0,
-    wait      = true,
+    wait      = false,
   }) {
     const write = getElementWriter('tintImage')
     write('element', element)
@@ -3947,7 +3835,7 @@ Command.cases.moveElement = {
     properties  = [],
     easingId    = Data.easings[0].id,
     duration    = 0,
-    wait        = true,
+    wait        = false,
   }) {
     const write = getElementWriter('moveElement')
     write('element', element)
@@ -4113,7 +4001,7 @@ Command.cases.moveLight = {
     properties  = [],
     easingId    = Data.easings[0].id,
     duration    = 0,
-    wait        = true,
+    wait        = false,
   }) {
     const write = getElementWriter('moveLight')
     write('light', light)
@@ -4226,12 +4114,6 @@ Command.cases.playAnimation = {
       ]},
     ])
 
-    // 创建方向映射选项
-    $('#playAnimation-mappable').loadItems([
-      {name: 'Yes', value: true},
-      {name: 'No', value: false},
-    ])
-
     // 创建等待结束选项
     $('#playAnimation-wait').loadItems([
       {name: 'Yes', value: true},
@@ -4249,10 +4131,7 @@ Command.cases.playAnimation = {
     if (priority === 0) return ''
     return priority > 0 ? `+${priority}` : priority.toString()
   },
-  parseDirectionMapping: function (mappable) {
-    return mappable ? Local.get('command.playAnimation.mappable') : ''
-  },
-  parse: function ({mode, position, actor, animationId, motion, priority, offsetY, rotation, mappable, wait}) {
+  parse: function ({mode, position, actor, animationId, motion, priority, offsetY, rotation, wait}) {
     const words = Command.words
     switch (mode) {
       case 'position':
@@ -4270,7 +4149,6 @@ Command.cases.playAnimation = {
     .push(this.parsePriority(priority))
     .push(offsetY + 'px')
     .push(Command.parseDegrees(Command.parseVariableNumber(rotation)))
-    .push(this.parseDirectionMapping(mappable))
     .push(Command.parseWait(wait))
     return [
       {color: 'object'},
@@ -4287,7 +4165,6 @@ Command.cases.playAnimation = {
     priority    = 0,
     offsetY     = 0,
     rotation    = 0,
-    mappable    = false,
     wait        = false,
   }) {
     const write = getElementWriter('playAnimation')
@@ -4299,7 +4176,6 @@ Command.cases.playAnimation = {
     write('priority', priority)
     write('offsetY', offsetY)
     write('rotation', rotation)
-    write('mappable', mappable)
     write('wait', wait)
     $('#playAnimation-mode').getFocus()
   },
@@ -4311,7 +4187,6 @@ Command.cases.playAnimation = {
     const priority = read('priority')
     const offsetY = read('offsetY')
     const rotation = read('rotation')
-    const mappable = read('mappable')
     const wait = read('wait')
     if (animationId === '') {
       return $('#playAnimation-animationId').getFocus()
@@ -4322,12 +4197,12 @@ Command.cases.playAnimation = {
     switch (mode) {
       case 'position': {
         const position = read('position')
-        Command.save({mode, position, animationId, motion, priority, offsetY, rotation, mappable, wait})
+        Command.save({mode, position, animationId, motion, priority, offsetY, rotation, wait})
         break
       }
       case 'actor': {
         const actor = read('actor')
-        Command.save({mode, actor, animationId, motion, priority, offsetY, rotation, mappable, wait})
+        Command.save({mode, actor, animationId, motion, priority, offsetY, rotation, wait})
         break
       }
     }
@@ -5405,6 +5280,68 @@ Command.cases.deleteActor = {
   },
 }
 
+// 设置玩家角色
+Command.cases.setPlayerActor = {
+  initialize: function () {
+    $('#setPlayerActor-confirm').on('click', this.save)
+  },
+  parse: function ({actor}) {
+    return [
+      {color: 'actor'},
+      {text: Local.get('command.setPlayerActor') + ': '},
+      {text: Command.parseActor(actor)},
+    ]
+  },
+  load: function ({actor = {type: 'trigger'}}) {
+    const write = getElementWriter('setPlayerActor')
+    write('actor', actor)
+    $('#setPlayerActor-actor').getFocus()
+  },
+  save: function () {
+    const read = getElementReader('setPlayerActor')
+    const actor = read('actor')
+    Command.save({actor})
+  },
+}
+
+// 设置队伍成员
+Command.cases.setPartyMember = {
+  initialize: function () {
+    $('#setPartyMember-confirm').on('click', this.save)
+
+    // 创建操作选项
+    $('#setPartyMember-operation').loadItems([
+      {name: 'Add', value: 'add'},
+      {name: 'Remove', value: 'remove'},
+    ])
+  },
+  parse: function ({operation, actor}) {
+    const words = Command.words
+    .push(Local.get('command.setPartyMember.' + operation))
+    .push(Command.parseActor(actor))
+    return [
+      {color: 'actor'},
+      {text: Local.get('command.setPartyMember') + ': '},
+      {text: words.join()},
+    ]
+  },
+  load: function ({
+    operation = 'add',
+    actor     = {type: 'trigger'},
+  }) {
+    const write = getElementWriter('setPartyMember')
+    write('operation', operation)
+    write('actor', actor)
+    $('#setPartyMember-operation').getFocus()
+  },
+  save: function () {
+    const read = getElementReader('setPartyMember')
+    const operation = read('operation')
+    const actor = read('actor')
+    Command.save({operation, actor})
+  },
+}
+
 // 改变角色队伍
 Command.cases.changeActorTeam = {
   initialize: function () {
@@ -5458,15 +5395,15 @@ Command.cases.changeActorState = {
     $('#changeActorState-operation').loadItems([
       {name: 'Add', value: 'add'},
       {name: 'Remove', value: 'remove'},
-      {name: 'Remove by ID', value: 'remove-by-id'},
+      {name: 'Remove Instance', value: 'remove-instance'},
     ])
 
     // 设置操作关联元素
     $('#changeActorState-operation').enableHiddenMode().relate([
-      {case: ['add', 'remove-by-id'], targets: [
+      {case: ['add', 'remove'], targets: [
         $('#changeActorState-stateId'),
       ]},
-      {case: 'remove', targets: [
+      {case: 'remove-instance', targets: [
         $('#changeActorState-state'),
       ]},
     ])
@@ -5480,10 +5417,10 @@ Command.cases.changeActorState = {
     .push(this.parseOperation(operation))
     switch (operation) {
       case 'add':
-      case 'remove-by-id':
+      case 'remove':
         words.push(Command.parseFileName(stateId))
         break
-      case 'remove':
+      case 'remove-instance':
         words.push(Command.parseState(state))
         break
     }
@@ -5497,7 +5434,7 @@ Command.cases.changeActorState = {
     actor     = {type: 'trigger'},
     operation = 'add',
     stateId   = '',
-    state     = {type: 'latest'},
+    state     = {type: 'trigger'},
   }) {
     const write = getElementWriter('changeActorState')
     write('actor', actor)
@@ -5512,7 +5449,7 @@ Command.cases.changeActorState = {
     const operation = read('operation')
     switch (operation) {
       case 'add':
-      case 'remove-by-id': {
+      case 'remove': {
         const stateId = read('stateId')
         if (stateId === '') {
           return $('#changeActorState-stateId').getFocus()
@@ -5520,7 +5457,7 @@ Command.cases.changeActorState = {
         Command.save({actor, operation, stateId})
         break
       }
-      case 'remove': {
+      case 'remove-instance': {
         const state = read('state')
         Command.save({actor, operation, state})
         break
@@ -5621,16 +5558,16 @@ Command.cases.changeActorSkill = {
     $('#changeActorSkill-operation').loadItems([
       {name: 'Add', value: 'add'},
       {name: 'Remove', value: 'remove'},
-      {name: 'Remove by ID', value: 'remove-by-id'},
+      {name: 'Remove Instance', value: 'remove-instance'},
       {name: 'Sort by Filename', value: 'sort-by-filename'},
     ])
 
     // 设置关联元素
     $('#changeActorSkill-operation').enableHiddenMode().relate([
-      {case: ['add', 'remove-by-id'], targets: [
+      {case: ['add', 'remove'], targets: [
         $('#changeActorSkill-skillId'),
       ]},
-      {case: 'remove', targets: [
+      {case: 'remove-instance', targets: [
         $('#changeActorSkill-skill'),
       ]},
     ])
@@ -5644,10 +5581,10 @@ Command.cases.changeActorSkill = {
     .push(this.parseOperation(operation))
     switch (operation) {
       case 'add':
-      case 'remove-by-id':
+      case 'remove':
         words.push(Command.parseFileName(skillId))
         break
-      case 'remove':
+      case 'remove-instance':
         words.push(Command.parseSkill(skill))
         break
     }
@@ -5661,7 +5598,7 @@ Command.cases.changeActorSkill = {
     actor     = {type: 'trigger'},
     operation = 'add',
     skillId   = '',
-    skill     = {type: 'latest'},
+    skill     = {type: 'trigger'},
   }) {
     const write = getElementWriter('changeActorSkill')
     write('actor', actor)
@@ -5676,7 +5613,7 @@ Command.cases.changeActorSkill = {
     const operation = read('operation')
     switch (operation) {
       case 'add':
-      case 'remove-by-id': {
+      case 'remove': {
         const skillId = read('skillId')
         if (skillId === '') {
           return $('#changeActorSkill-skillId').getFocus()
@@ -5684,7 +5621,7 @@ Command.cases.changeActorSkill = {
         Command.save({actor, operation, skillId})
         break
       }
-      case 'remove': {
+      case 'remove-instance': {
         const skill = read('skill')
         Command.save({actor, operation, skill})
         break
@@ -5693,6 +5630,41 @@ Command.cases.changeActorSkill = {
         Command.save({actor, operation})
         break
     }
+  },
+}
+
+// 改变角色动画
+Command.cases.changeActorAnimation = {
+  initialize: function () {
+    $('#changeActorAnimation-confirm').on('click', this.save)
+  },
+  parse: function ({actor, animationId}) {
+    const words = Command.words
+    .push(Command.parseActor(actor))
+    .push(Command.parseFileName(animationId))
+    return [
+      {color: 'actor'},
+      {text: Local.get('command.changeActorAnimation') + ': '},
+      {text: words.join()},
+    ]
+  },
+  load: function ({
+    actor       = {type: 'trigger'},
+    animationId = '',
+  }) {
+    const write = getElementWriter('changeActorAnimation')
+    write('actor', actor)
+    write('animationId', animationId)
+    $('#changeActorAnimation-actor').getFocus()
+  },
+  save: function () {
+    const read = getElementReader('changeActorAnimation')
+    const actor = read('actor')
+    const animationId = read('animationId')
+    if (animationId === '') {
+      return $('#changeActorAnimation-animationId').getFocus()
+    }
+    Command.save({actor, animationId})
   },
 }
 
@@ -6427,7 +6399,7 @@ Command.cases.createTrigger = {
     const words = Command.words
     .push(Command.parseFileName(triggerId))
     .push(casterName)
-    .push(casterName !== originName ? originName : '')
+    .push(originName.indexOf(casterName) === -1 ? originName : '')
     .push(Command.parseAngle(angle))
     .push(Command.parseVariableNumber(distance, 't'))
     .push(this.parseTimeScale(timeScale))
@@ -6534,54 +6506,50 @@ Command.cases.setTriggerAngle = {
 }
 
 // 设置包裹
-Command.cases.setBag = {
+Command.cases.setInventory = {
   initialize: function () {
-    $('#setBag-confirm').on('click', this.save)
+    $('#setInventory-confirm').on('click', this.save)
 
     // 创建操作选项
-    $('#setBag-operation').loadItems([
+    $('#setInventory-operation').loadItems([
       {name: 'Increase Money', value: 'increase-money'},
       {name: 'Decrease Money', value: 'decrease-money'},
       {name: 'Increase Items', value: 'increase-items'},
       {name: 'Decrease Items', value: 'decrease-items'},
-      {name: 'Create Equipment', value: 'create-equipment'},
       {name: 'Gain Equipment', value: 'gain-equipment'},
       {name: 'Lose Equipment', value: 'lose-equipment'},
-      {name: 'Swap Indices', value: 'swap'},
+      {name: 'Gain Equipment', value: 'gain-equipment-instance'},
+      {name: 'Lose Equipment', value: 'lose-equipment-instance'},
       {name: 'Sort Simply', value: 'sort'},
       {name: 'Sort by Filename', value: 'sort-by-filename'},
-      {name: 'Use Global Actor\'s Bag', value: 'reference'},
+      {name: 'Use Global Actor\'s Inventory', value: 'reference'},
       {name: 'Reset', value: 'reset'},
     ])
 
     // 设置关联元素
-    $('#setBag-operation').enableHiddenMode().relate([
+    $('#setInventory-operation').enableHiddenMode().relate([
       {case: ['increase-money', 'decrease-money'], targets: [
-        $('#setBag-money'),
+        $('#setInventory-money'),
       ]},
       {case: ['increase-items', 'decrease-items'], targets: [
-        $('#setBag-itemId'),
-        $('#setBag-quantity'),
-      ]},
-      {case: 'create-equipment', targets: [
-        $('#setBag-equipmentId'),
+        $('#setInventory-itemId'),
+        $('#setInventory-quantity'),
       ]},
       {case: ['gain-equipment', 'lose-equipment'], targets: [
-        $('#setBag-equipment'),
+        $('#setInventory-equipmentId'),
       ]},
-      {case: 'swap', targets: [
-        $('#setBag-index1'),
-        $('#setBag-index2'),
+      {case: ['gain-equipment-instance', 'lose-equipment-instance'], targets: [
+        $('#setInventory-equipment'),
       ]},
       {case: 'reference', targets: [
-        $('#setBag-refActor'),
+        $('#setInventory-refActor'),
       ]},
     ])
   },
-  parse: function ({actor, operation, money, itemId, quantity, equipmentId, equipment, index1, index2, refActor}) {
+  parse: function ({actor, operation, money, itemId, quantity, equipmentId, equipment, refActor}) {
     const words = Command.words
     .push(Command.parseActor(actor))
-    .push(Local.get('command.setBag.' + operation))
+    .push(Local.get('command.setInventory.' + operation))
     switch (operation) {
       case 'increase-money':
       case 'decrease-money':
@@ -6592,26 +6560,21 @@ Command.cases.setBag = {
         words.push(Command.parseVariableFile(itemId))
         words.push(Command.parseVariableNumber(quantity))
         break
-      case 'create-equipment':
-        words.push(Command.parseVariableFile(equipmentId))
-        break
       case 'gain-equipment':
       case 'lose-equipment':
+        words.push(Command.parseVariableFile(equipmentId))
+        break
+      case 'gain-equipment-instance':
+      case 'lose-equipment-instance':
         words.push(Command.parseEquipment(equipment))
         break
-      case 'swap': {
-        const a = Command.parseVariableNumber(index1)
-        const b = Command.parseVariableNumber(index2)
-        words.push(`${a} <-> ${b}`)
-        break
-      }
       case 'reference':
         words.push(Command.parseActor(refActor))
         break
     }
     return [
-      {color: 'bag'},
-      {text: Local.get('command.setBag') + ': '},
+      {color: 'inventory'},
+      {text: Local.get('command.setInventory') + ': '},
       {text: words.join()},
     ]
   },
@@ -6622,12 +6585,10 @@ Command.cases.setBag = {
     itemId      = '',
     quantity    = 1,
     equipmentId = '',
-    equipment   = {type: 'latest'},
-    index1      = 0,
-    index2      = 1,
+    equipment   = {type: 'trigger'},
     refActor    = {type: 'player'},
   }) {
-    const write = getElementWriter('setBag')
+    const write = getElementWriter('setInventory')
     write('actor', actor)
     write('operation', operation)
     write('money', money)
@@ -6635,13 +6596,11 @@ Command.cases.setBag = {
     write('quantity', quantity)
     write('equipmentId', equipmentId)
     write('equipment', equipment)
-    write('index1', index1)
-    write('index2', index2)
     write('refActor', refActor)
-    $('#setBag-actor').getFocus()
+    $('#setInventory-actor').getFocus()
   },
   save: function () {
-    const read = getElementReader('setBag')
+    const read = getElementReader('setInventory')
     const actor = read('actor')
     const operation = read('operation')
     switch (operation) {
@@ -6656,29 +6615,24 @@ Command.cases.setBag = {
         const itemId = read('itemId')
         const quantity = read('quantity')
         if (itemId === '') {
-          return $('#setBag-itemId').getFocus()
+          return $('#setInventory-itemId').getFocus()
         }
         Command.save({actor, operation, itemId, quantity})
         break
       }
-      case 'create-equipment': {
+      case 'gain-equipment':
+      case 'lose-equipment': {
         const equipmentId = read('equipmentId')
         if (equipmentId === '') {
-          return $('#setBag-equipmentId').getFocus()
+          return $('#setInventory-equipmentId').getFocus()
         }
         Command.save({actor, operation, equipmentId})
         break
       }
-      case 'gain-equipment':
-      case 'lose-equipment': {
+      case 'gain-equipment-instance':
+      case 'lose-equipment-instance': {
         const equipment = read('equipment')
         Command.save({actor, operation, equipment})
-        break
-      }
-      case 'swap': {
-        const index1 = read('index1')
-        const index2 = read('index2')
-        Command.save({actor, operation, index1, index2})
         break
       }
       case 'sort':
@@ -6743,7 +6697,7 @@ Command.cases.useItem = {
     }
     words.push(Command.parseWait(wait))
     return [
-      {color: 'bag'},
+      {color: 'inventory'},
       {text: Local.get('command.useItem') + ': '},
       {text: words.join()},
     ]
@@ -6822,7 +6776,7 @@ Command.cases.setItem = {
         break
     }
     return [
-      {color: 'bag'},
+      {color: 'inventory'},
       {text: Local.get('command.setItem') + ': '},
       {text: words.join()},
     ]
@@ -6863,14 +6817,6 @@ Command.cases.setCooldown = {
       {name: 'Set', value: 'set'},
       {name: 'Increase', value: 'increase'},
       {name: 'Decrease', value: 'decrease'},
-      {name: 'Reset', value: 'reset'},
-    ])
-
-    // 设置操作关联元素
-    $('#setCooldown-operation').enableHiddenMode().relate([
-      {case: ['set', 'increase', 'decrease'], targets: [
-        $('#setCooldown-cooldown'),
-      ]},
     ])
   },
   parse: function ({actor, operation, key, cooldown}) {
@@ -6878,15 +6824,9 @@ Command.cases.setCooldown = {
     .push(Command.parseActor(actor))
     .push(Local.get('command.setCooldown.' + operation))
     .push(Command.parseVariableEnum('cooldown-key', key))
-    switch (operation) {
-      case 'set':
-      case 'increase':
-      case 'decrease':
-        words.push(Command.parseVariableNumber(cooldown, 'ms'))
-        break
-    }
+    .push(Command.parseVariableNumber(cooldown, 'ms'))
     return [
-      {color: 'bag'},
+      {color: 'inventory'},
       {text: Local.get('command.setCooldown') + ': '},
       {text: words.join()},
     ]
@@ -6916,18 +6856,8 @@ Command.cases.setCooldown = {
     if (key === '') {
       return $('#setCooldown-key').getFocus()
     }
-    switch (operation) {
-      case 'set':
-      case 'increase':
-      case 'decrease': {
-        const cooldown = read('cooldown')
-        Command.save({actor, operation, key, cooldown})
-        break
-      }
-      case 'reset':
-        Command.save({actor, operation, key})
-        break
-    }
+    const cooldown = read('cooldown')
+    Command.save({actor, operation, key, cooldown})
   },
 }
 
@@ -6946,11 +6876,11 @@ Command.cases.setShortcut = {
     // 设置操作关联元素
     $('#setShortcut-operation').enableHiddenMode().relate([
       {case: 'set-item-shortcut', targets: [
-        $('#setShortcut-item'),
+        $('#setShortcut-itemId'),
         $('#setShortcut-key'),
       ]},
       {case: 'set-skill-shortcut', targets: [
-        $('#setShortcut-skill'),
+        $('#setShortcut-skillId'),
         $('#setShortcut-key'),
       ]},
       {case: 'delete-shortcut', targets: [
@@ -6958,24 +6888,24 @@ Command.cases.setShortcut = {
       ]},
     ])
   },
-  parse: function ({actor, operation, item, skill, key}) {
+  parse: function ({actor, operation, itemId, skillId, key}) {
     const words = Command.words
     .push(Command.parseActor(actor))
     .push(Local.get('command.setShortcut.' + operation))
     const shortcutKey = Command.parseGroupEnumString('shortcut-key', key)
     switch (operation) {
       case 'set-item-shortcut':
-        words.push(Command.parseItem(item)).push(shortcutKey)
+        words.push(Command.parseFileName(itemId)).push(shortcutKey)
         break
       case 'set-skill-shortcut':
-        words.push(Command.parseSkill(skill)).push(shortcutKey)
+        words.push(Command.parseFileName(skillId)).push(shortcutKey)
         break
       case 'delete-shortcut':
         words.push(shortcutKey)
         break
     }
     return [
-      {color: 'bag'},
+      {color: 'inventory'},
       {text: Local.get('command.setShortcut') + ': '},
       {text: words.join()},
     ]
@@ -6983,8 +6913,8 @@ Command.cases.setShortcut = {
   load: function ({
     actor     = {type: 'trigger'},
     operation = 'set-item-shortcut',
-    item      = {type: 'trigger'},
-    skill     = {type: 'trigger'},
+    itemId    = '',
+    skillId   = '',
     key       = Enum.getDefStringId('shortcut-key'),
   }) {
     // 加载快捷键选项
@@ -6994,8 +6924,8 @@ Command.cases.setShortcut = {
     const write = getElementWriter('setShortcut')
     write('actor', actor)
     write('operation', operation)
-    write('item', item)
-    write('skill', skill)
+    write('itemId', itemId)
+    write('skillId', skillId)
     write('key', key)
     $('#setShortcut-operation').getFocus()
   },
@@ -7009,13 +6939,19 @@ Command.cases.setShortcut = {
     }
     switch (operation) {
       case 'set-item-shortcut': {
-        const item = read('item')
-        Command.save({actor, operation, item, key})
+        const itemId = read('itemId')
+        if (itemId === '') {
+          return $('#setShortcut-itemId').getFocus()
+        }
+        Command.save({actor, operation, itemId, key})
         break
       }
       case 'set-skill-shortcut': {
-        const skill = read('skill')
-        Command.save({actor, operation, skill, key})
+        const skillId = read('skillId')
+        if (skillId === '') {
+          return $('#setShortcut-skillId').getFocus()
+        }
+        Command.save({actor, operation, skillId, key})
         break
       }
       case 'delete-shortcut':
@@ -7066,58 +7002,63 @@ Command.cases.loadScene = {
   initialize: function () {
     $('#loadScene-confirm').on('click', this.save)
 
-    // 创建类型选项
-    $('#loadScene-type').loadItems([
-      {name: 'Specify', value: 'specify'},
-      {name: 'Start Scene', value: 'start'},
+    // 创建转移玩家角色选项
+    $('#loadScene-transfer').loadItems([
+      {name: 'Yes', value: true},
+      {name: 'No', value: false},
     ])
 
-    // 设置类型关联元素
-    $('#loadScene-type').enableHiddenMode().relate([
-      {case: 'specify', targets: [
-        $('#loadScene-sceneId'),
+    // 设置转移玩家角色关联元素
+    $('#loadScene-transfer').enableHiddenMode().relate([
+      {case: true, targets: [
+        $('#loadScene-x'),
+        $('#loadScene-y'),
       ]},
     ])
   },
-  parse: function ({type, sceneId}) {
-    let scene
-    switch (type) {
-      case 'specify':
-        scene = Command.parseFileName(sceneId)
-        break
-      case 'start':
-        scene = Local.get('command.loadScene.start')
-        break
+  parse: function ({sceneId, transfer, x, y}) {
+    const words = Command.words
+    .push(Command.parseVariableFile(sceneId))
+    if (transfer) {
+      words
+      .push(Command.parseVariableNumber(x))
+      .push(Command.parseVariableNumber(y))
     }
     return [
       {color: 'scene'},
       {text: Local.get('command.loadScene') + ': '},
-      {text: scene},
+      {text: words.join()},
     ]
   },
   load: function ({
-    type    = 'specify',
-    sceneId = '',
+    sceneId   = '',
+    transfer  = true,
+    x         = 0,
+    y         = 0,
   }) {
     const write = getElementWriter('loadScene')
-    write('type', type)
     write('sceneId', sceneId)
+    write('transfer', transfer)
+    write('x', x)
+    write('y', y)
     $('#loadScene-sceneId').getFocus()
   },
   save: function () {
     const read = getElementReader('loadScene')
-    const type = read('type')
-    switch (type) {
-      case 'specify': {
-        const sceneId = read('sceneId')
-        if (sceneId === '') {
-          return $('#loadScene-sceneId').getFocus()
-        }
-        Command.save({type, sceneId})
+    const sceneId = read('sceneId')
+    if (sceneId === '') {
+      return $('#loadScene-sceneId').getFocus()
+    }
+    const transfer = read('transfer')
+    switch (transfer) {
+      case true: {
+        const x = read('x')
+        const y = read('y')
+        Command.save({sceneId, transfer, x, y})
         break
       }
-      case 'start':
-        Command.save({type})
+      case false:
+        Command.save({sceneId, transfer})
         break
     }
   },
@@ -7198,7 +7139,7 @@ Command.cases.moveCamera = {
     actor     = {type: 'trigger'},
     easingId  = Data.easings[0].id,
     duration  = 0,
-    wait      = true,
+    wait      = false,
   }) {
     const write = getElementWriter('moveCamera')
     write('mode', mode)
@@ -7267,7 +7208,7 @@ Command.cases.setZoomFactor = {
     zoom      = 1,
     easingId  = Data.easings[0].id,
     duration  = 0,
-    wait      = true,
+    wait      = false,
   }) {
     const write = getElementWriter('setZoomFactor')
     write('zoom', zoom)
@@ -7332,7 +7273,7 @@ Command.cases.setAmbientLight = {
     blue      = 0,
     easingId  = Data.easings[0].id,
     duration  = 0,
-    wait      = true,
+    wait      = false,
   }) {
     const write = getElementWriter('setAmbientLight')
     write('red', red)
@@ -7408,7 +7349,7 @@ Command.cases.tintScreen = {
     tint      = [0, 0, 0, 0],
     easingId  = Data.easings[0].id,
     duration  = 0,
-    wait      = true,
+    wait      = false,
   }) {
     const write = getElementWriter('tintScreen')
     write('tint-0', tint[0])
@@ -7472,7 +7413,7 @@ Command.cases.setGameSpeed = {
     speed     = 1,
     easingId  = Data.easings[0].id,
     duration  = 0,
-    wait      = true,
+    wait      = false,
   }) {
     const write = getElementWriter('setGameSpeed')
     write('speed', speed)
@@ -7603,96 +7544,6 @@ Command.cases.switchCollisionSystem = {
   save: function () {
     const operation = $('#switchCollisionSystem-operation').read()
     Command.save({operation})
-  },
-}
-
-// 游戏数据
-Command.cases.gameData = {
-  initialize: function () {
-    $('#gameData-confirm').on('click', this.save)
-
-    // 创建操作选项
-    $('#gameData-operation').loadItems([
-      {name: 'Save', value: 'save'},
-      {name: 'Load', value: 'load'},
-      {name: 'Delete', value: 'delete'},
-      {name: 'Save Global Data', value: 'save-global-data'},
-      {name: 'Load Global Data', value: 'load-global-data'},
-    ])
-
-    // 设置操作关联元素
-    $('#gameData-operation').enableHiddenMode().relate([
-      {case: 'save', targets: [
-        $('#gameData-filename'),
-        $('#gameData-variables'),
-      ]},
-      {case: ['save', 'load', 'delete'], targets: [
-        $('#gameData-filename'),
-      ]},
-    ])
-  },
-  parseOperation: function (operation) {
-    return Local.get('command.gameData.' + operation)
-  },
-  parse: function ({operation, filename, variables}) {
-    const words = Command.words.push(this.parseOperation(operation))
-    switch (operation) {
-      case 'save':
-        words.push(Command.parseVariableString(filename))
-        if (variables) {
-          const label = Local.get('command.gameData.variables')
-          const string = variables.split(/\s*,\s*/).join(', ')
-          words.push(`${label} {${string}}`)
-        }
-        break
-      case 'load':
-      case 'delete':
-        words.push(Command.parseVariableString(filename))
-        break
-    }
-    return [
-      {color: 'system'},
-      {text: Local.get('command.gameData') + ': '},
-      {text: words.join()},
-    ]
-  },
-  load: function ({
-    operation = 'save',
-    filename  = '',
-    variables = '',
-  }) {
-    $('#gameData-operation').write(operation)
-    $('#gameData-filename').write(filename)
-    $('#gameData-variables').write(variables)
-    $('#gameData-operation').getFocus()
-  },
-  save: function () {
-    const read = getElementReader('gameData')
-    const operation = read('operation')
-    switch (operation) {
-      case 'save': {
-        const filename = read('filename')
-        if (filename === '') {
-          return $('#gameData-filename').getFocus()
-        }
-        const variables = read('variables').trim()
-        Command.save({operation, filename, variables})
-        break
-      }
-      case 'load':
-      case 'delete': {
-        const filename = read('filename')
-        if (filename === '') {
-          return $('#gameData-filename').getFocus()
-        }
-        Command.save({operation, filename})
-        break
-      }
-      case 'save-global-data':
-      case 'load-global-data':
-        Command.save({operation})
-        break
-    }
   },
 }
 
@@ -8373,275 +8224,6 @@ CommandSuggestion.list.selectDefaultCommand = function () {
   }
 }
 
-// ******************************** 文本提示框 ********************************
-
-const TextSuggestion = {
-  // properties
-  list: $('#text-suggestions'),
-  inserting: false,
-  target: null,
-  data: null,
-  // methods
-  initialize: null,
-  listen: null,
-  open: null,
-  close: null,
-  select: null,
-  getRawData: null,
-  createData: null,
-  // events
-  textBoxFocus: null,
-  textBoxBlur: null,
-  textBoxKeydown: null,
-  textBoxInput: null,
-  listPointerdown: null,
-  listUpdate: null,
-  listOpen: null,
-}
-
-// list methods
-TextSuggestion.list.updateNodeElement = null
-TextSuggestion.list.selectDefaultCommand = null
-
-// 初始化
-TextSuggestion.initialize = function () {
-  // 绑定指令目录列表
-  const {list} = this
-  list.bind(() => this.data)
-
-  // 侦听事件
-  list.on('pointerdown', this.listPointerdown)
-  list.on('update', this.listUpdate)
-  list.on('open', this.listOpen)
-}
-
-// 侦听文本输入框
-TextSuggestion.listen = function (textBox, type, generator) {
-  textBox.suggestionType = type
-  if (type === 'custom') {
-    textBox.generator = generator
-  }
-  textBox.on('focus', this.textBoxFocus)
-  textBox.on('blur', this.textBoxBlur)
-  textBox.on('keydown', this.textBoxKeydown)
-  textBox.on('input', this.textBoxInput)
-  textBox.on('compositionend', this.textBoxInput)
-}
-
-// 打开
-TextSuggestion.open = function (target) {
-  if (this.target !== target) {
-    this.target = target
-    this.createData()
-    // this.list.update()
-    // this.list.selectDefaultCommand()
-  }
-}
-
-// 关闭
-TextSuggestion.close = function () {
-  this.target = null
-  this.data = null
-  this.list.clear()
-  this.list.hide()
-}
-
-// 选择文本
-TextSuggestion.select = function (item) {
-  this.inserting = true
-  let {target} = this
-  if (target instanceof StringVar) {
-    target = target.strBox
-  }
-  target.input.select()
-  target.insert(item.name)
-  this.inserting = false
-  this.close()
-}
-
-// 获取原始数据
-TextSuggestion.getRawData = function (type) {
-  switch (type) {
-    case 'actor':
-      return Scene.actors
-    case 'light':
-      return Scene.lights
-    case 'custom':
-      return this.target.generator()
-  }
-}
-
-// 创建数据
-TextSuggestion.createData = function () {
-  const type = this.target.suggestionType
-  if (type === this.data?.type) return
-  const filter = {}
-  const data = []
-  data.type = type
-  this.data = data
-
-  // 创建数据
-  const items = this.getRawData(type)
-  if (items instanceof Array) {
-    for (const item of items) {
-      const {name} = item
-      if (!filter[name]) {
-        filter[name] = true
-        data.push({name})
-      }
-    }
-    // 排序
-    if (data.length > 1) {
-      data.sort((a, b) => a.name.localeCompare(b.name))
-    }
-  }
-}
-
-// 文本框 - 获得焦点事件
-TextSuggestion.textBoxFocus = function (event) {
-  const text = this.read().trim()
-  TextSuggestion.open(this)
-  TextSuggestion.list.searchNodes(text)
-  TextSuggestion.list.selectDefaultCommand()
-}
-
-// 文本框 - 失去焦点事件
-TextSuggestion.textBoxBlur = function (event) {
-  TextSuggestion.close()
-}
-
-// 文本框 - 键盘按下事件
-TextSuggestion.textBoxKeydown = function (event) {
-  if (!TextSuggestion.list.hasClass('hidden')) {
-    switch (event.code) {
-      case 'ArrowUp':
-      case 'ArrowDown':
-        event.preventDefault()
-        TextSuggestion.list.selectRelative(
-          event.code.slice(5).toLowerCase()
-        )
-        break
-      case 'PageUp':
-        TextSuggestion.list.pageUp(true)
-        break
-      case 'PageDown':
-        TextSuggestion.list.pageDown(true)
-        break
-      case 'Enter':
-      case 'NumpadEnter': {
-        const item = TextSuggestion.list.read()
-        if (item) {
-          // 阻止触发确定按钮点击操作
-          event.stopPropagation()
-          TextSuggestion.list.open(item)
-        }
-        break
-      }
-      case 'Escape':
-        TextSuggestion.close()
-        break
-    }
-  }
-}
-
-// 文本框 - 输入事件
-TextSuggestion.textBoxInput = function (event) {
-  if (this.contains(document.activeElement) &&
-    TextSuggestion.inserting === false &&
-    event.inputType !== 'insertCompositionText') {
-    const text = this.read().trim()
-    TextSuggestion.open(this)
-    TextSuggestion.list.searchNodes(text)
-    TextSuggestion.list.selectDefaultCommand()
-  }
-}
-
-// 列表 - 指针按下事件
-TextSuggestion.listPointerdown = function (event) {
-  const element = event.target
-  if (element.tagName === 'NODE-ITEM') {
-    // 阻止文本输入框的blur行为
-    event.preventDefault()
-    const pointerup = event => {
-      if (this.pressing === pointerup) {
-        this.pressing = null
-        if (element.contains(event.target)) {
-          TextSuggestion.select(element.item)
-        }
-      }
-    }
-    this.pressing = pointerup
-    window.on('pointerup', pointerup, {once: true})
-  }
-}
-
-// 列表 - 更新事件
-TextSuggestion.listUpdate = function (event) {
-  const MAX_LINES = 30
-  const rect = TextSuggestion.target.rect()
-  const rl = rect.left
-  const rt = rect.top
-  const rb = rect.bottom
-  const rw = rect.width
-  const space = window.innerHeight - rb
-  const below = space >= 200
-  const capacity = below
-  ? Math.floor(space / 20)
-  : Math.floor(rt / 20)
-  const lines = Math.min(this.elements.count, capacity, MAX_LINES)
-  const top = below ? rb : rt - lines * 20
-  if (lines !== 0 && !(lines === 1 &&
-    this.elements[0].item.name === TextSuggestion.target.read())) {
-    this.style.left = `${rl}px`
-    this.style.top = `${top}px`
-    this.style.width = `calc(${rw}px - var(--2dpx))`
-    this.style.height = `${lines * 20}px`
-    this.style.zIndex = Window.frames.length + 1
-    this.show()
-  } else {
-    this.hide()
-  }
-}
-
-// 列表 - 打开事件
-TextSuggestion.listOpen = function (event) {
-  const item = event.value
-  // 指令选项在列表中的时候打开
-  if (item.element.parentNode) {
-    TextSuggestion.select(item)
-  }
-}
-
-// 列表 - 重写更新节点元素方法
-TextSuggestion.list.updateNodeElement = function (element) {
-  if (!element.initialized) {
-    element.initialized = true
-    element.textContent = element.item.name
-    element.addClass('text-suggestion-item')
-  }
-}
-
-// 列表扩展方法 - 选择默认指令选项
-TextSuggestion.list.selectDefaultCommand = function () {
-  // 如果有选中的指令存在于结果列表中则返回
-  const {selection, elements} = this
-  const {count} = elements
-  if (selection) {
-    for (let i = 0; i < count; i++) {
-      if (elements[i].item === selection) {
-        this.scrollToSelection('middle')
-        return
-      }
-    }
-  }
-  // 从结果列表中选择第一个匹配的指令选项
-  for (let i = 0; i < count; i++) {
-    this.select(elements[i].item)
-    this.scrollToSelection('middle')
-    return
-  }
-}
-
 // ******************************** 事件编辑器 ********************************
 
 const EventEditor = {
@@ -9248,14 +8830,10 @@ NumberOperand.initialize = function () {
     {name: 'Actor - Movement Speed', value: 'actor-movement-speed'},
     {name: 'Actor - Collision Size', value: 'actor-collision-size'},
     {name: 'Actor - Collision Weight', value: 'actor-collision-weight'},
-    {name: 'Actor - Item Quantity', value: 'actor-bag-item-quantity'},
-    {name: 'Actor - Equipment Quantity', value: 'actor-bag-equipment-quantity'},
-    {name: 'Actor - Bag Money', value: 'actor-bag-money'},
-    {name: 'Actor - Bag Used Space', value: 'actor-bag-used-space'},
-    {name: 'Actor - Bag Version', value: 'actor-bag-version'},
-    {name: 'Actor - Skill Version', value: 'actor-skill-version'},
-    {name: 'Actor - State Version', value: 'actor-state-version'},
-    {name: 'Actor - Equipment Version', value: 'actor-equipment-version'},
+    {name: 'Actor - Item Quantity', value: 'actor-inventory-item-quantity'},
+    {name: 'Actor - Equipment Quantity', value: 'actor-inventory-equipment-quantity'},
+    {name: 'Actor - Inventory Money', value: 'actor-inventory-money'},
+    {name: 'Actor - Inventory Used Space', value: 'actor-inventory-used-space'},
     {name: 'Actor - Anim Current Time', value: 'actor-animation-current-time'},
     {name: 'Actor - Anim Duration', value: 'actor-animation-duration'},
     {name: 'Actor - Anim Progress', value: 'actor-animation-progress'},
@@ -9268,8 +8846,6 @@ NumberOperand.initialize = function () {
     {name: 'State - Current Time', value: 'state-current-time'},
     {name: 'State - Duration', value: 'state-duration'},
     {name: 'State - Progress', value: 'state-progress'},
-    {name: 'Equipment - Index', value: 'equipment-index'},
-    {name: 'Item - Index', value: 'item-index'},
     {name: 'Item - Quantity', value: 'item-quantity'},
     {name: 'Trigger - Speed', value: 'trigger-speed'},
     {name: 'Trigger - Angle', value: 'trigger-angle'},
@@ -9288,22 +8864,18 @@ NumberOperand.initialize = function () {
       'actor-movement-speed',
       'actor-collision-size',
       'actor-collision-weight',
-      'actor-bag-money',
-      'actor-bag-used-space',
-      'actor-bag-version',
-      'actor-skill-version',
-      'actor-state-version',
-      'actor-equipment-version',
+      'actor-inventory-money',
+      'actor-inventory-used-space',
       'actor-animation-current-time',
       'actor-animation-duration',
       'actor-animation-progress'], targets: [
       $('#setNumber-operand-common-actor'),
     ]},
-    {case: 'actor-bag-item-quantity', targets: [
+    {case: 'actor-inventory-item-quantity', targets: [
       $('#setNumber-operand-common-actor'),
       $('#setNumber-operand-object-itemId'),
     ]},
-    {case: 'actor-bag-equipment-quantity', targets: [
+    {case: 'actor-inventory-equipment-quantity', targets: [
       $('#setNumber-operand-common-actor'),
       $('#setNumber-operand-object-equipmentId'),
     ]},
@@ -9317,10 +8889,7 @@ NumberOperand.initialize = function () {
     {case: ['state-current-time', 'state-duration', 'state-progress'], targets: [
       $('#setNumber-operand-common-state'),
     ]},
-    {case: 'equipment-index', targets: [
-      $('#setNumber-operand-common-equipment'),
-    ]},
-    {case: ['item-index', 'item-quantity'], targets: [
+    {case: 'item-quantity', targets: [
       $('#setNumber-operand-common-item'),
     ]},
     {case: ['trigger-speed', 'trigger-angle'], targets: [
@@ -9378,7 +8947,6 @@ NumberOperand.initialize = function () {
     {name: 'Elapsed Time', value: 'elapsed-time'},
     {name: 'Delta Time', value: 'delta-time'},
     {name: 'Raw Delta Time', value: 'raw-delta-time'},
-    {name: 'Get Timestamp', value: 'timestamp'},
   ])
 
   // 侦听事件
@@ -9454,19 +9022,15 @@ NumberOperand.parseObjectProperty = function (operand) {
     case 'actor-movement-speed':
     case 'actor-collision-size':
     case 'actor-collision-weight':
-    case 'actor-bag-money':
-    case 'actor-bag-used-space':
-    case 'actor-bag-version':
-    case 'actor-skill-version':
-    case 'actor-state-version':
-    case 'actor-equipment-version':
+    case 'actor-inventory-money':
+    case 'actor-inventory-used-space':
     case 'actor-animation-current-time':
     case 'actor-animation-duration':
     case 'actor-animation-progress':
       return `${Command.parseActor(operand.actor)} -> ${property}`
-    case 'actor-bag-item-quantity':
+    case 'actor-inventory-item-quantity':
       return `${Command.parseActor(operand.actor)} -> ${Command.parseFileName(operand.itemId)}.${property}`
-    case 'actor-bag-equipment-quantity':
+    case 'actor-inventory-equipment-quantity':
       return `${Command.parseActor(operand.actor)} -> ${Command.parseFileName(operand.equipmentId)}.${property}`
     case 'actor-cooldown-time':
     case 'actor-cooldown-duration':
@@ -9482,9 +9046,6 @@ NumberOperand.parseObjectProperty = function (operand) {
     case 'state-duration':
     case 'state-progress':
       return `${Command.parseState(operand.state)} -> ${property}`
-    case 'equipment-index':
-      return `${Command.parseEquipment(operand.equipment)} -> ${property}`
-    case 'item-index':
     case 'item-quantity':
       return `${Command.parseItem(operand.item)} -> ${property}`
     case 'trigger-speed':
@@ -9607,7 +9168,6 @@ NumberOperand.open = function (operand = {
   let commonActor = {type: 'trigger'}
   let commonSkill = {type: 'trigger'}
   let commonState = {type: 'trigger'}
-  let commonEquipment = {type: 'trigger'}
   let commonItem = {type: 'trigger'}
   let commonTrigger = {type: 'trigger'}
   let cooldownKey = ''
@@ -9642,7 +9202,6 @@ NumberOperand.open = function (operand = {
       commonActor = operand.actor ?? commonActor
       commonSkill = operand.skill ?? commonSkill
       commonState = operand.state ?? commonState
-      commonEquipment = operand.equipment ?? commonEquipment
       commonItem = operand.item ?? commonItem
       commonTrigger = operand.trigger ?? commonTrigger
       cooldownKey = operand.key ?? cooldownKey
@@ -9677,7 +9236,6 @@ NumberOperand.open = function (operand = {
   write('common-actor', commonActor)
   write('common-skill', commonSkill)
   write('common-state', commonState)
-  write('common-equipment', commonEquipment)
   write('common-item', commonItem)
   write('common-trigger', commonTrigger)
   write('string-search', stringSearch)
@@ -9790,12 +9348,8 @@ NumberOperand.save = function () {
         case 'actor-movement-speed':
         case 'actor-collision-size':
         case 'actor-collision-weight':
-        case 'actor-bag-money':
-        case 'actor-bag-used-space':
-        case 'actor-bag-version':
-        case 'actor-skill-version':
-        case 'actor-state-version':
-        case 'actor-equipment-version':
+        case 'actor-inventory-money':
+        case 'actor-inventory-used-space':
         case 'actor-animation-current-time':
         case 'actor-animation-duration':
         case 'actor-animation-progress': {
@@ -9803,7 +9357,7 @@ NumberOperand.save = function () {
           operand = {operation, type, property, actor}
           break
         }
-        case 'actor-bag-item-quantity': {
+        case 'actor-inventory-item-quantity': {
           const actor = read('common-actor')
           const itemId = read('object-itemId')
           if (itemId === '') {
@@ -9812,7 +9366,7 @@ NumberOperand.save = function () {
           operand = {operation, type, property, actor, itemId}
           break
         }
-        case 'actor-bag-equipment-quantity': {
+        case 'actor-inventory-equipment-quantity': {
           const actor = read('common-actor')
           const equipmentId = read('object-equipmentId')
           if (equipmentId === '') {
@@ -9846,12 +9400,6 @@ NumberOperand.save = function () {
           operand = {operation, type, property, state}
           break
         }
-        case 'equipment-index': {
-          const equipment = read('common-equipment')
-          operand = {operation, type, property, equipment}
-          break
-        }
-        case 'item-index':
         case 'item-quantity': {
           const item = read('common-item')
           operand = {operation, type, property, item}
@@ -10263,6 +9811,10 @@ IfCondition.initialize = function () {
     {name: 'Has Targets', value: 'has-targets'},
     {name: 'Has No Targets', value: 'has-no-targets'},
     {name: 'In Screen', value: 'in-screen'},
+    {name: 'Is Player Actor', value: 'is-player'},
+    {name: 'Is Party Member', value: 'is-member'},
+    {name: 'Has Skill', value: 'has-skill'},
+    {name: 'Has State', value: 'has-state'},
     {name: 'Has Items', value: 'has-items'},
     {name: 'Has Equipments', value: 'has-equipments'},
     {name: 'Equipped', value: 'equipped'},
@@ -10270,6 +9822,12 @@ IfCondition.initialize = function () {
 
   // 设置角色操作关联元素
   $('#if-condition-actor-operation').enableHiddenMode().relate([
+    {case: 'has-skill', targets: [
+      $('#if-condition-actor-skillId'),
+    ]},
+    {case: 'has-state', targets: [
+      $('#if-condition-actor-stateId'),
+    ]},
     {case: 'has-items', targets: [
       $('#if-condition-actor-itemId'),
       $('#if-condition-actor-quantity'),
@@ -10394,10 +9952,8 @@ IfCondition.parseStringOperand = function ({operand}) {
       return `"${Command.parseMultiLineString(operand.value)}"`
     case 'variable':
       return Command.parseVariable(operand.variable)
-    case 'enum': {
-      const name = Command.parseEnumString(operand.stringId)
-      return `${Local.get('command.if.string.enum')}(${name})`
-    }
+    case 'enum':
+      return Command.parseEnumStringTag(operand.stringId)
   }
 }
 
@@ -10438,9 +9994,13 @@ IfCondition.parseObjectOperand = function ({operand}) {
 }
 
 // 解析角色操作
-IfCondition.parseActorOperation = function ({operation, itemId, equipmentId, quantity}) {
+IfCondition.parseActorOperation = function ({operation, itemId, equipmentId, skillId, stateId, quantity}) {
   const op = Local.get('command.if.actor.' + operation)
   switch (operation) {
+    case 'has-skill':
+      return `${op} ${Command.parseFileName(skillId)}`
+    case 'has-state':
+      return `${op} ${Command.parseFileName(stateId)}`
     case 'has-items': {
       const text = `${op} ${Command.parseFileName(itemId)}`
       return quantity === 1 ? text : `${text} x ${quantity}`
@@ -10579,6 +10139,8 @@ IfCondition.open = function (condition = {
   let commonLight = {type: 'trigger'}
   let commonElement = {type: 'trigger'}
   let actorOperation = 'present-active'
+  let actorSkillId = ''
+  let actorStateId = ''
   let actorItemId = ''
   let actorEquipmentId = ''
   let actorQuantity = 1
@@ -10629,6 +10191,8 @@ IfCondition.open = function (condition = {
     case 'actor':
       commonActor = condition.actor
       actorOperation = condition.operation
+      actorSkillId = condition.skillId ?? actorSkillId
+      actorStateId = condition.stateId ?? actorStateId
       actorItemId = condition.itemId ?? actorItemId
       actorEquipmentId = condition.equipmentId ?? actorEquipmentId
       actorQuantity = condition.quantity ?? actorQuantity
@@ -10679,6 +10243,8 @@ IfCondition.open = function (condition = {
   write('common-light', commonLight)
   write('common-element', commonElement)
   write('actor-operation', actorOperation)
+  write('actor-skillId', actorSkillId)
+  write('actor-stateId', actorStateId)
   write('actor-itemId', actorItemId)
   write('actor-equipmentId', actorEquipmentId)
   write('actor-quantity', actorQuantity)
@@ -10889,6 +10455,22 @@ IfCondition.save = function () {
       const actor = read('common-actor')
       const operation = read('actor-operation')
       switch (operation) {
+        case 'has-skill': {
+          const skillId = read('actor-skillId')
+          if (skillId === '') {
+            return $('#if-condition-actor-skillId').getFocus()
+          }
+          condition = {type, actor, operation, skillId}
+          break
+        }
+        case 'has-state': {
+          const stateId = read('actor-stateId')
+          if (stateId === '') {
+            return $('#if-condition-actor-stateId').getFocus()
+          }
+          condition = {type, actor, operation, stateId}
+          break
+        }
         case 'has-items': {
           const itemId = read('actor-itemId')
           if (itemId === '') {
@@ -11128,10 +10710,8 @@ SwitchCondition.parse = function (condition) {
       return condition.value.toString()
     case 'string':
       return `"${Command.parseMultiLineString(condition.value)}"`
-    case 'enum': {
-      const name = Command.parseEnumString(condition.stringId)
-      return `${Local.get('command.switch.enum')}(${name})`
-    }
+    case 'enum':
+      return Command.parseEnumStringTag(condition.stringId)
     case 'keyboard': {
       const key = condition.keycode
       const keyboard = Local.get('command.switch.keyboard')
@@ -13111,7 +12691,7 @@ ActorGetter.initialize = function () {
     {name: 'Player Actor', value: 'player'},
     {name: 'Party Member', value: 'member'},
     {name: 'Global Actor', value: 'global'},
-    {name: 'Select By ID', value: 'by-id'},
+    {name: 'By Actor ID', value: 'by-id'},
     {name: 'Variable', value: 'variable'},
   ])
 
@@ -13246,7 +12826,8 @@ SkillGetter.initialize = function () {
   $('#skillGetter-type').loadItems([
     {name: 'Event Trigger Skill', value: 'trigger'},
     {name: 'Latest Skill', value: 'latest'},
-    {name: 'Select By Shortcut Key', value: 'by-key'},
+    {name: 'By Shortcut Key', value: 'by-key'},
+    {name: 'By Skill Id', value: 'by-id'},
     {name: 'Variable', value: 'variable'},
   ])
 
@@ -13255,6 +12836,10 @@ SkillGetter.initialize = function () {
     {case: 'by-key', targets: [
       $('#skillGetter-actor'),
       $('#skillGetter-key'),
+    ]},
+    {case: 'by-id', targets: [
+      $('#skillGetter-actor'),
+      $('#skillGetter-skillId'),
     ]},
     {case: 'variable', targets: [
       $('#skillGetter-variable'),
@@ -13277,6 +12862,7 @@ SkillGetter.open = function (target) {
 
   let actor = {type: 'trigger'}
   let key = Enum.getDefStringId('shortcut-key')
+  let skillId = ''
   let variable = {type: 'local', key: ''}
   const skill = target.dataValue
   switch (skill.type) {
@@ -13287,6 +12873,10 @@ SkillGetter.open = function (target) {
       actor = skill.actor
       key = skill.key
       break
+    case 'by-id':
+      actor = skill.actor
+      skillId = skill.skillId
+      break
     case 'variable':
       variable = skill.variable
       break
@@ -13294,6 +12884,7 @@ SkillGetter.open = function (target) {
   $('#skillGetter-type').write(skill.type)
   $('#skillGetter-actor').write(actor)
   $('#skillGetter-key').write(key)
+  $('#skillGetter-skillId').write(skillId)
   $('#skillGetter-variable').write(variable)
   $('#skillGetter-type').getFocus()
 }
@@ -13315,6 +12906,15 @@ SkillGetter.confirm = function (event) {
         return $('#skillGetter-key').getFocus()
       }
       getter = {type, actor, key}
+      break
+    }
+    case 'by-id': {
+      const actor = read('actor')
+      const skillId = read('skillId')
+      if (skillId === '') {
+        return $('#skillGetter-skillId').getFocus()
+      }
+      getter = {type, actor, skillId}
       break
     }
     case 'variable': {
@@ -13348,11 +12948,16 @@ StateGetter.initialize = function () {
   $('#stateGetter-type').loadItems([
     {name: 'Event Trigger State', value: 'trigger'},
     {name: 'Latest State', value: 'latest'},
+    {name: 'By State Id', value: 'by-id'},
     {name: 'Variable', value: 'variable'},
   ])
 
   // 设置关联元素
   $('#stateGetter-type').enableHiddenMode().relate([
+    {case: 'by-id', targets: [
+      $('#stateGetter-actor'),
+      $('#stateGetter-stateId'),
+    ]},
     {case: 'variable', targets: [
       $('#stateGetter-variable'),
     ]},
@@ -13367,17 +12972,25 @@ StateGetter.open = function (target) {
   this.target = target
   Window.open('stateGetter')
 
+  let actor = {type: 'trigger'}
+  let stateId = ''
   let variable = {type: 'local', key: ''}
   const state = target.dataValue
   switch (state.type) {
     case 'trigger':
     case 'latest':
       break
+    case 'by-id':
+      actor = state.actor
+      stateId = state.stateId
+      break
     case 'variable':
       variable = state.variable
       break
   }
   $('#stateGetter-type').write(state.type)
+  $('#stateGetter-actor').write(actor)
+  $('#stateGetter-stateId').write(stateId)
   $('#stateGetter-variable').write(variable)
   $('#stateGetter-type').getFocus()
 }
@@ -13392,6 +13005,15 @@ StateGetter.confirm = function (event) {
     case 'latest':
       getter = {type}
       break
+    case 'by-id': {
+      const actor = read('actor')
+      const stateId = read('stateId')
+      if (stateId === '') {
+        return $('#stateGetter-stateId').getFocus()
+      }
+      getter = {type, actor, stateId}
+      break
+    }
     case 'variable': {
       const variable = read('variable')
       if (VariableGetter.isNone(variable)) {
@@ -13423,7 +13045,7 @@ EquipmentGetter.initialize = function () {
   $('#equipmentGetter-type').loadItems([
     {name: 'Event Trigger Equipment', value: 'trigger'},
     {name: 'Latest Equipment', value: 'latest'},
-    {name: 'Select By Slot', value: 'by-slot'},
+    {name: 'By Equipment Slot', value: 'by-slot'},
     {name: 'Variable', value: 'variable'},
   ])
 
@@ -13524,7 +13146,7 @@ ItemGetter.initialize = function () {
   $('#itemGetter-type').loadItems([
     {name: 'Event Trigger Item', value: 'trigger'},
     {name: 'Latest Item', value: 'latest'},
-    {name: 'Select By Shortcut Key', value: 'by-key'},
+    {name: 'By Shortcut Key', value: 'by-key'},
     {name: 'Variable', value: 'variable'},
   ])
 
@@ -13629,7 +13251,7 @@ PositionGetter.initialize = function () {
     {name: 'Position of Actor', value: 'actor'},
     {name: 'Position of Trigger', value: 'trigger'},
     {name: 'Position of Light', value: 'light'},
-    {name: 'Position of Region', value: 'region'},
+    {name: 'Position of Object', value: 'object'},
   ])
 
   // 设置类型关联元素
@@ -13651,8 +13273,8 @@ PositionGetter.initialize = function () {
     {case: 'light', targets: [
       $('#positionGetter-light'),
     ]},
-    {case: 'region', targets: [
-      $('#positionGetter-regionId'),
+    {case: 'object', targets: [
+      $('#positionGetter-objectId'),
     ]},
   ])
 
@@ -13670,7 +13292,7 @@ PositionGetter.open = function (target) {
   let actor = {type: 'trigger'}
   let trigger = {type: 'trigger'}
   let light = {type: 'trigger'}
-  let regionId = PresetObject.getDefaultPresetId('region')
+  let objectId = PresetObject.getDefaultPresetId('any')
   const position = target.dataValue
   switch (position.type) {
     case 'absolute':
@@ -13690,8 +13312,8 @@ PositionGetter.open = function (target) {
     case 'light':
       light = position.light
       break
-    case 'region':
-      regionId = position.regionId
+    case 'object':
+      objectId = position.objectId
       break
   }
   $('#positionGetter-type').write(position.type)
@@ -13700,7 +13322,7 @@ PositionGetter.open = function (target) {
   $('#positionGetter-actor').write(actor)
   $('#positionGetter-trigger').write(trigger)
   $('#positionGetter-light').write(light)
-  $('#positionGetter-regionId').write(regionId)
+  $('#positionGetter-objectId').write(objectId)
   $('#positionGetter-type').getFocus()
 }
 
@@ -13737,12 +13359,12 @@ PositionGetter.confirm = function (event) {
       getter = {type, light}
       break
     }
-    case 'region': {
-      const regionId = read('regionId')
-      if (regionId === '') {
-        return $('#positionGetter-regionId').getFocus()
+    case 'object': {
+      const objectId = read('objectId')
+      if (objectId === '') {
+        return $('#positionGetter-objectId').getFocus()
       }
-      getter = {type, regionId}
+      getter = {type, objectId}
       break
     }
   }
@@ -13932,7 +13554,7 @@ LightGetter.initialize = function () {
   $('#lightGetter-type').loadItems([
     {name: 'Event Trigger Light', value: 'trigger'},
     {name: 'Latest Light', value: 'latest'},
-    {name: 'Select By ID', value: 'by-id'},
+    {name: 'By Light ID', value: 'by-id'},
     {name: 'Variable', value: 'variable'},
   ])
 
@@ -14024,8 +13646,9 @@ ElementGetter.initialize = function () {
   $('#elementGetter-type').loadItems([
     {name: 'Event Trigger Element', value: 'trigger'},
     {name: 'Latest Element', value: 'latest'},
-    {name: 'Select By ID', value: 'by-id'},
-    {name: 'Select By Ancestor And ID', value: 'by-ancestor-and-id'},
+    {name: 'By Element ID', value: 'by-id'},
+    {name: 'By Ancestor And ID', value: 'by-ancestor-and-id'},
+    {name: 'By Parent And Index', value: 'by-index'},
     {name: 'Variable', value: 'variable'},
   ])
 
@@ -14037,6 +13660,10 @@ ElementGetter.initialize = function () {
     {case: 'by-ancestor-and-id', targets: [
       $('#elementGetter-ancestor'),
       $('#elementGetter-presetId'),
+    ]},
+    {case: 'by-index', targets: [
+      $('#elementGetter-ancestor'),
+      $('#elementGetter-index'),
     ]},
     {case: 'variable', targets: [
       $('#elementGetter-variable'),
@@ -14052,6 +13679,7 @@ ElementGetter.open = function (target) {
   this.target = target
   Window.open('elementGetter')
 
+  let index = 0
   let presetId = PresetElement.getDefaultPresetId()
   let ancestor = {type: 'trigger'}
   let variable = {type: 'local', key: ''}
@@ -14067,6 +13695,10 @@ ElementGetter.open = function (target) {
       ancestor = element.ancestor
       presetId = element.presetId
       break
+    case 'by-index':
+      ancestor = element.parent
+      index = element.index
+      break
     case 'variable':
       variable = element.variable
       break
@@ -14074,6 +13706,7 @@ ElementGetter.open = function (target) {
   $('#elementGetter-type').write(element.type)
   $('#elementGetter-ancestor').write(ancestor)
   $('#elementGetter-presetId').write(presetId)
+  $('#elementGetter-index').write(index)
   $('#elementGetter-variable').write(variable)
   $('#elementGetter-type').getFocus()
 }
@@ -14103,6 +13736,12 @@ ElementGetter.confirm = function (event) {
         return $('#elementGetter-presetId').getFocus()
       }
       getter = {type, ancestor, presetId}
+      break
+    }
+    case 'by-index': {
+      const parent = read('ancestor')
+      const index = read('index')
+      getter = {type, parent, index}
       break
     }
     case 'variable': {

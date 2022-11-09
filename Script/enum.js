@@ -973,7 +973,6 @@ class EnumerationContext {
   groupMap  //:object
   itemCache //:object
   itemLists //:object
-  version   //:symbol
 
   constructor(enumeration) {
     const itemMap = {}
@@ -1024,8 +1023,6 @@ class EnumerationContext {
     this.groupMap = groupMap
     this.itemCache = {}
     this.itemLists = {}
-    // 版本用来通知动画动作名称已经更新
-    this.version = Symbol()
   }
 
   // 获取枚举群组

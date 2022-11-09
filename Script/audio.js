@@ -23,8 +23,8 @@ AudioManager.initialize = function () {
   this.analyser = this.context.createAnalyser()
   this.analyser.connect(this.context.destination)
 
-  // 创建音频对象
-  this.player = new SinglePlayer()
+  // 创建音频播放器
+  this.player = new AudioPlayer()
 }
 
 // 获取波形图
@@ -90,9 +90,9 @@ AudioManager.close = function () {
   this.waveforms = {}
 }
 
-// ******************************** 单源播放器类 ********************************
+// ******************************** 音频播放器类 ********************************
 
-class SinglePlayer {
+class AudioPlayer {
   audio   //:element
   source  //:object
   panner  //:object

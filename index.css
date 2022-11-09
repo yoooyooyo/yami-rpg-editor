@@ -226,7 +226,7 @@
   --command-color-audio: #008080;
   --command-color-actor: #800000;
   --command-color-skill: #804000;
-  --command-color-bag: #f06000;
+  --command-color-inventory: #f06000;
   --command-color-scene: #0080c0;
   --command-color-system: #ff289c;
   --command-color-custom: #c800a4;
@@ -384,7 +384,7 @@
   --command-color-audio: #00fa9a;
   --command-color-actor: #ffc0cb;
   --command-color-skill: #f0e68c;
-  --command-color-bag: #ffd700;
+  --command-color-inventory: #ffd700;
   --command-color-scene: #00ced1;
   --command-color-system: #ff69b4;
   --command-color-custom: #e8dcaa;
@@ -2586,8 +2586,8 @@ command-item:not(.selected) > .skill {
   color: var(--command-color-skill);
 }
 
-command-item:not(.selected) > .bag {
-  color: var(--command-color-bag);
+command-item:not(.selected) > .inventory {
+  color: var(--command-color-inventory);
 }
 
 command-item:not(.selected) > .scene {
@@ -4016,6 +4016,36 @@ nav-item[value=particle].selected {
   overflow: hidden;
 }
 
+#animation-dirList {
+  display: flex;
+  flex-direction: column;
+  position: absolute;
+  width: 100px;
+  height: 100px;
+  /* background-color: green; */
+}
+
+anim-dir {
+  margin: 4px 0 0 4px;
+  width: 32px;
+  height: 32px;
+  line-height: 32px;
+  text-align: center;
+  font-size: 1.2em;
+  color: white;
+  background-color: rgba(255, 255, 255, 0.25);
+  border-radius: 4px;
+  opacity: 0.25;
+}
+
+anim-dir:hover {
+  opacity: 0.5;
+}
+
+anim-dir.selected {
+  opacity: 1;
+}
+
 #animation-timeline {
   position: absolute;
   width: 100%;
@@ -4348,11 +4378,6 @@ nav-item[value=particle].selected {
   position: absolute;
   width: 100%;
   height: 100%;
-}
-
-text.animation-motion-direction {
-  pointer-events: none;
-  color: var(--text-color-variable-init);
 }
 
 /* --------------------------------
@@ -6288,8 +6313,8 @@ text.animation-motion-direction {
   background-color: var(--command-color-skill);
 }
 
-.icon-command.bag {
-  background-color: var(--command-color-bag);
+.icon-command.inventory {
+  background-color: var(--command-color-inventory);
 }
 
 .icon-command.scene {
@@ -6306,26 +6331,6 @@ text.animation-motion-direction {
 
 .icon-command.custom {
   background-color: var(--command-color-custom);
-}
-
-/* --------------------------------
- * 文本建议列表
- * --------------------------------
- */
-#text-suggestions {
-  display: block;
-  position: fixed;
-  margin-left: var(--1dpx);
-  /* box-shadow: 0 0 16px 0 rgba(0, 0, 0, 0.5); */
-  background-color: var(--suggestion-widget-background);
-  outline: var(--window-outline);
-  pointer-events: visible;
-}
-
-.text-suggestion-item {
-  padding-left: 4px;
-  padding-right: 4px;
-  /* color: var(--text-color-unit); */
 }
 
 /* --------------------------------
@@ -6391,7 +6396,7 @@ text.animation-motion-direction {
  */
 #stateGetter {
   width: 324px;
-  height: 118px;
+  height: 142px;
 }
 
 #stateGetter-confirm {
@@ -7614,7 +7619,7 @@ text.animation-motion-direction {
  */
 #playAnimation {
   width: 324px;
-  height: 286px;
+  height: 262px;
 }
 
 #playAnimation-confirm {
@@ -7989,6 +7994,44 @@ text.animation-motion-direction {
 }
 
 /* --------------------------------
+ * 设置玩家角色
+ * --------------------------------
+ */
+#setPlayerActor {
+  width: 324px;
+  height: 94px;
+}
+
+#setPlayerActor-confirm {
+  right: 108px;
+  bottom: 10px;
+}
+
+#setPlayerActor-cancel {
+  right: 10px;
+  bottom: 10px;
+}
+
+/* --------------------------------
+ * 设置队伍成员
+ * --------------------------------
+ */
+ #setPartyMember {
+  width: 324px;
+  height: 118px;
+}
+
+#setPartyMember-confirm {
+  right: 108px;
+  bottom: 10px;
+}
+
+#setPartyMember-cancel {
+  right: 10px;
+  bottom: 10px;
+}
+
+/* --------------------------------
  * 改变角色队伍
  * --------------------------------
  */
@@ -8060,6 +8103,25 @@ text.animation-motion-direction {
 }
 
 #changeActorSkill-cancel {
+  right: 10px;
+  bottom: 10px;
+}
+
+/* --------------------------------
+ * 改变角色动画
+ * --------------------------------
+ */
+ #changeActorAnimation {
+  width: 324px;
+  height: 118px;
+}
+
+#changeActorAnimation-confirm {
+  right: 108px;
+  bottom: 10px;
+}
+
+#changeActorAnimation-cancel {
   right: 10px;
   bottom: 10px;
 }
@@ -8372,17 +8434,17 @@ text.animation-motion-direction {
  * 设置包裹
  * --------------------------------
  */
-#setBag {
+#setInventory {
   width: 324px;
   height: 166px;
 }
 
-#setBag-confirm {
+#setInventory-confirm {
   right: 108px;
   bottom: 10px;
 }
 
-#setBag-cancel {
+#setInventory-cancel {
   right: 10px;
   bottom: 10px;
 }
@@ -8488,7 +8550,7 @@ text.animation-motion-direction {
  */
 #loadScene {
   width: 324px;
-  height: 118px;
+  height: 166px;
 }
 
 #loadScene-confirm {
@@ -8674,31 +8736,12 @@ text.animation-motion-direction {
 }
 
 /* --------------------------------
- * 游戏数据
- * --------------------------------
- */
-#gameData {
-  width: 324px;
-  height: 142px;
-}
-
-#gameData-confirm {
-  right: 108px;
-  bottom: 10px;
-}
-
-#gameData-cancel {
-  right: 10px;
-  bottom: 10px;
-}
-
-/* --------------------------------
  * 执行脚本
  * --------------------------------
  */
 #script {
   width: 720px;
-  height: 314px;
+  height: 234px;
 }
 
 #script-script {
@@ -8706,7 +8749,7 @@ text.animation-motion-direction {
   left: 10px;
   top: 10px;
   width: 700px;
-  height: 240px;
+  height: 160px;
 }
 
 #script-confirm {

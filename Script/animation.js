@@ -10,6 +10,7 @@ const Animation = {
   body: $('#animation-body').hide(),
   screen: $('#animation-screen'),
   marquee: $('#animation-marquee'),
+  dirList: $('#animation-dirList'),
   searcher: $('#animation-searcher'),
   list: $('#animation-list'),
   layerList: $('#animation-layer-list'),
@@ -25,10 +26,12 @@ const Animation = {
   outerPointerArea: $('#animation-timeline-pointer-area-outer'),
   innerPointerArea: $('#animation-timeline-pointer-area-inner'),
   pointer: $('#animation-timeline-pointer'),
+  dirTags: null,
   // editor properties
   dragging: null,
   playing: false,
   motion: null,
+  direction: 0,
   target: null,
   hover: null,
   history: null,
@@ -98,6 +101,9 @@ const Animation = {
   setZoom: null,
   setHover: null,
   setMotion: null,
+  setMotionMode: null,
+  setDirection: null,
+  createDirItems: null,
   editMotion: null,
   getNewMotionId: null,
   revealTarget: null,
@@ -224,11 +230,11 @@ const Animation = {
   listPointerdown: null,
   listSelect: null,
   listRecord: null,
-  listUpdate: null,
   listOpen: null,
   listPopup: null,
   listChange: null,
   listPageResize: null,
+  dirListPointerdown: null,
   timelinePageResize: null,
   timelineToolbarPointerdown: null,
   layerListWheel: null,
@@ -268,9 +274,6 @@ Animation.list.updateHead = null
 Animation.list.createIcon = null
 Animation.list.createText = null
 Animation.list.updateText = null
-Animation.list.createDirText = null
-Animation.list.updateDirText = null
-Animation.list.updateDirections = null
 Animation.list.createLoopIcon = null
 Animation.list.updateLoopIcon = null
 Animation.list.onDelete = null
@@ -413,6 +416,17 @@ Animation.initialize = function () {
     }
   })
 
+  // 设置方向标签
+  this.dirTags = {
+    '1-dir': ['→'],
+    '1-dir-mirror': ['→'],
+    '2-dir': ['←', '→'],
+    '3-dir-mirror': ['↓', '→', '↑'],
+    '4-dir': ['↓', '←', '→', '↑'],
+    '5-dir-mirror': ['↓', '→', '↑', '↘', '↗'],
+    '8-dir': ['↓', '←', '→', '↑', '↙', '↘', '↖', '↗'],
+  }
+
   // 设置舞台边距
   this.padding = 800
 
@@ -435,8 +449,6 @@ Animation.initialize = function () {
   list.removable = true
   list.bind(() => this.motions)
   list.updaters.push(list.updateText)
-  list.creators.push(list.createDirText)
-  list.updaters.push(list.updateDirText)
   list.creators.push(list.createLoopIcon)
   list.creators.push(list.updateLoopIcon)
 
@@ -472,22 +484,37 @@ Animation.initialize = function () {
     list.scrollToSelection()
     Animation.planToSave()
   }
+  History.processors['animation-motion-mode-change'] = (operation, data) => {
+    const {motion, direction, mode, dirCases} = data
+    data.mode = motion.mode
+    data.dirCases = motion.dirCases
+    motion.mode = mode
+    motion.dirCases = dirCases
+    list.update()
+    list.select(motion)
+    list.scrollToSelection()
+    Inspector.open('animMotion', motion)
+    Inspector.animMotion.write({mode})
+    Animation.createDirItems()
+    Animation.setDirection(direction)
+    Animation.planToSave()
+  }
   History.processors['animation-layer-rename'] = (operation, data) => {
-    const {motion, response} = data
-    layerList.restoreMotion(motion)
+    const {motion, direction, response} = data
+    layerList.restoreMotion(motion, direction)
     layerList.restore(operation, response)
   }
   History.processors['animation-layer-create'] =
   History.processors['animation-layer-delete'] =
   History.processors['animation-layer-remove'] = (operation, data) => {
-    const {motion, response} = data
+    const {motion, direction, response} = data
     Animation.contextLoaded = false
-    layerList.restoreMotion(motion)
+    layerList.restoreMotion(motion, direction)
     layerList.restore(operation, response)
   }
   History.processors['animation-layer-hidden'] = (operation, data) => {
-    const {motion, item, oldValues, newValue} = data
-    layerList.restoreMotion(motion)
+    const {motion, direction, item, oldValues, newValue} = data
+    layerList.restoreMotion(motion, direction)
     if (operation === 'undo') {
       layerList.restoreRecursiveStates(item, 'hidden', oldValues)
     } else {
@@ -498,8 +525,8 @@ Animation.initialize = function () {
     Animation.planToSave()
   }
   History.processors['animation-layer-locked'] = (operation, data) => {
-    const {motion, item, oldValues, newValue} = data
-    layerList.restoreMotion(motion)
+    const {motion, direction, item, oldValues, newValue} = data
+    layerList.restoreMotion(motion, direction)
     if (operation === 'undo') {
       layerList.restoreRecursiveStates(item, 'locked', oldValues)
     } else {
@@ -509,14 +536,14 @@ Animation.initialize = function () {
     Animation.planToSave()
   }
   History.processors['animation-frames-change'] = (operation, data) => {
-    const {motion, changes, sMarquee, dMarquee} = data
+    const {motion, direction, changes, sMarquee, dMarquee} = data
     for (const change of changes) {
       const {layer, frames} = change
       change.frames = layer.frames
       layer.frames = frames
     }
     const {layer, x, length} = operation === 'undo' ? sMarquee : dMarquee
-    Animation.outerTimelineList.restoreMotionAndLayer(motion, layer)
+    Animation.outerTimelineList.restoreMotionAndLayer(motion, direction, layer)
     Animation.player.index = x
     // 取消选择选框来避免获取错误的窗口宽高
     Animation.unselectMarquee()
@@ -527,7 +554,7 @@ Animation.initialize = function () {
     Animation.planToSave()
   }
   History.processors['animation-easing-change'] = (operation, data) => {
-    const {motion, target, easingId} = data
+    const {motion, direction, target, easingId} = data
     data.easingId = target.easingId
     target.easingId = easingId
     if (Curve.target === target) {
@@ -535,13 +562,14 @@ Animation.initialize = function () {
     }
     Curve.updateTimeline(target)
     Animation.setMotion(motion)
+    Animation.setDirection(direction)
     Animation.selectFrame(target)
     Animation.updateFrameContexts()
     Animation.requestRendering()
     Animation.planToSave()
   }
   History.processors['animation-target-shift'] = (operation, data) => {
-    const {editor, motion, target, x, y} = data
+    const {editor, motion, direction, target, x, y} = data
     data.x = target.x
     data.y = target.y
     target.x = x
@@ -550,13 +578,14 @@ Animation.initialize = function () {
       editor.write({x, y})
     }
     Animation.setMotion(motion)
+    Animation.setDirection(direction)
     Animation.selectFrame(target)
     Animation.updateFrameContexts()
     Animation.requestRendering()
     Animation.planToSave()
   }
   History.processors['animation-target-resize'] = (operation, data) => {
-    const {editor, motion, target, scaleX, scaleY} = data
+    const {editor, motion, direction, target, scaleX, scaleY} = data
     data.scaleX = target.scaleX
     data.scaleY = target.scaleY
     target.scaleX = scaleX
@@ -565,31 +594,34 @@ Animation.initialize = function () {
       editor.write({scaleX, scaleY})
     }
     Animation.setMotion(motion)
+    Animation.setDirection(direction)
     Animation.selectFrame(target)
     Animation.updateFrameContexts()
     Animation.requestRendering()
     Animation.planToSave()
   }
   History.processors['animation-target-rotate'] = (operation, data) => {
-    const {editor, motion, target, rotation} = data
+    const {editor, motion, direction, target, rotation} = data
     data.rotation = target.rotation
     target.rotation = rotation
     if (editor.target === target) {
       editor.write({rotation})
     }
     Animation.setMotion(motion)
+    Animation.setDirection(direction)
     Animation.selectFrame(target)
     Animation.updateFrameContexts()
     Animation.requestRendering()
     Animation.planToSave()
   }
   History.processors['animation-target-index'] = (operation, data) => {
-    const {editor, motion, target, hindex, vindex} = data
+    const {motion, direction, target, hindex, vindex} = data
     data.hindex = target.spriteX
     data.vindex = target.spriteY
     target.spriteX = hindex
     target.spriteY = vindex
     Animation.setMotion(motion)
+    Animation.setDirection(direction)
     Animation.selectFrame(target)
     Animation.requestRendering()
     if (Sprite.state !== 'closed') {
@@ -625,11 +657,11 @@ Animation.initialize = function () {
   list.on('pointerdown', this.listPointerdown)
   list.on('select', this.listSelect)
   list.on('record', this.listRecord)
-  list.on('update', this.listUpdate)
   list.on('open', this.listOpen)
   list.on('popup', this.listPopup)
   list.on('change', this.listChange)
   list.page.on('resize', this.listPageResize)
+  this.dirList.on('pointerdown', this.dirListPointerdown)
   this.timeline.on('resize', this.timelinePageResize)
   this.toolbar.on('pointerdown', this.timelineToolbarPointerdown)
   this.layerList.on('wheel', this.layerListWheel)
@@ -1075,34 +1107,100 @@ Animation.setMotion = function (motion) {
   if (this.motion !== motion) {
     this.motion = motion
     this.updateMotionItem()
+    this.createDirItems()
     this.stop()
     this.stopAnimation()
     this.requestRendering()
-    this.updatePlayerMotion()
     this.player.destroyUpdatingEmitters()
     if (motion) {
-      this.layers = motion.layers
-      this.contextLoaded = false
       this.timeline.show()
       this.timeline.updateHead()
-      this.layerList.update()
-      Inspector.open('animMotion', motion)
       Curve.open()
-      // 标记动作对象为已加载状态 - 以便销毁元素
-      if (motion.loaded === undefined) {
-        Object.defineProperty(motion, 'loaded', {
-          configurable: true,
-          value: true,
-        })
-      }
+      this.setDirection(this.direction)
     } else {
       this.layers = null
       this.timeline.hide()
       this.layerList.clear()
       this.innerTimelineList.clear()
+      this.updatePlayerMotion()
       this.unselectMarquee()
       Inspector.close()
       Curve.close()
+    }
+  }
+}
+
+// 设置动作模式
+Animation.setMotionMode = function (mode) {
+  if (!this.motion) return
+  const dirCases = this.motion.dirCases
+  this.history.save({
+    type: 'animation-motion-mode-change',
+    motion: this.motion,
+    direction: this.direction,
+    mode: this.motion.mode,
+    dirCases: dirCases.slice(),
+  })
+  // 设置新的模式
+  this.motion.mode = mode
+  // 补充缺少的动作方向
+  const dirs = this.dirTags[mode]
+  const length = dirs.length
+  for (let i = dirCases.length; i < length; i++) {
+    dirCases[i] = Inspector.animMotion.createDir()
+  }
+  // 删除多余的动作方向
+  if (dirCases.length > length) {
+    dirCases.length = length
+  }
+}
+
+// 设置动作方向
+Animation.setDirection = function (direction) {
+  if (!this.motion) return
+  const dirCases = this.motion.dirCases
+  const dirIndex = Math.min(direction, dirCases.length - 1)
+  const dirCase = this.motion.dirCases[dirIndex]
+  this.direction = dirIndex
+  this.layers = dirCase.layers
+  this.updatePlayerMotion()
+  this.contextLoaded = false
+  this.layerList.update()
+  this.dirList.querySelector('.selected')?.removeClass('selected')
+  this.dirList.childNodes[dirIndex].addClass('selected')
+  // 标记动作对象为已加载状态 - 以便销毁元素
+  if (dirCase.loaded === undefined) {
+    Object.defineProperty(dirCase, 'loaded', {
+      configurable: true,
+      value: true,
+    })
+  }
+}
+
+// 创建方向选项
+Animation.createDirItems = function () {
+  const dirList = this.dirList
+  const motion = this.motion
+  const mode = motion?.mode ?? 'none'
+  // 当动作模式发生变化时，更新方向选项
+  if (dirList.mode !== mode) {
+    dirList.mode = mode
+    dirList.clear()
+    if (mode === 'none') return
+    const dirs = this.dirTags[mode]
+    for (let i = 0; i < dirs.length; i++) {
+      const element = document.createElement('anim-dir')
+      if (i === Animation.direction) {
+        element.addClass('selected')
+      }
+      element.direction = i
+      element.textContent = dirs[i]
+      dirList.appendChild(element)
+    }
+    if (dirs.length > 1) {
+      dirList.show()
+    } else {
+      dirList.hide()
     }
   }
 }
@@ -1215,6 +1313,7 @@ Animation.shiftTarget = function (x, y) {
         type: type,
         editor: editor,
         motion: this.motion,
+        direction: this.direction,
         target: target,
         x: target.x,
         y: target.y,
@@ -1254,6 +1353,7 @@ Animation.resizeTarget = function (scaleX, scaleY) {
         type: type,
         editor: editor,
         motion: this.motion,
+        direction: this.direction,
         target: target,
         scaleX: target.scaleX,
         scaleY: target.scaleY,
@@ -1297,6 +1397,7 @@ Animation.rotateTarget = function (rotation) {
         type: type,
         editor: editor,
         motion: this.motion,
+        direction: this.direction,
         target: target,
         rotation: target.rotation,
       })
@@ -1411,10 +1512,9 @@ Animation.updateTargetContext = function () {
 
 // 更新播放器动作
 Animation.updatePlayerMotion = function () {
-  const {player, motion} = this
-  if (player.motion !== motion) {
-    player.motion = motion
-  }
+  this.player.motion = this.motion
+  this.player.direction = this.direction
+  this.player.layers = this.layers
 }
 
 // 更新所有帧的上下文
@@ -1710,31 +1810,23 @@ Animation.getMotionListItems = function (animationId) {
       value: undefined,
     })
   }
-  const version = Data.enumeration.context.version
-  let items = motions.listItems
-  // 枚举数据版本变化时重新生成选项列表
-  if (items && items.version !== version) {
-    items = undefined
+  const items = []
+  const flags = {}
+  for (const motion of motions) {
+    const enumId = motion.id
+    if (enumId in flags) continue
+    flags[enumId] = true
+    const name = Enum.getString(enumId)?.name ?? Command.parseUnlinkedId(enumId)
+    items.push({
+      name: name,
+      value: enumId,
+    })
   }
-  if (items === undefined) {
-    const length = motions.length
-    items = new Array(length)
-    for (let i = 0; i < length; i++) {
-      const enumId = motions[i].id
-      const name = Enum.getString(enumId)?.name ?? Command.parseUnlinkedId(enumId)
-      items[i] = {
-        name: name,
-        value: enumId,
-      }
-    }
-    if (length === 0) {
-      items.push({
-        name: Local.get('common.none'),
-        value: '',
-      })
-    }
-    items.version = version
-    motions.listItems = items
+  if (items.length === 0) {
+    items.push({
+      name: Local.get('common.none'),
+      value: '',
+    })
   }
   return items
 }
@@ -3192,6 +3284,7 @@ Animation.saveFrames = function (layers, sMarquee, dMarquee = sMarquee) {
   this.history.save({
     type: 'animation-frames-change',
     motion: Animation.motion,
+    direction: Animation.direction,
     changes: changes,
     sMarquee: sMarquee,
     dMarquee: dMarquee,
@@ -4792,11 +4885,6 @@ Animation.listRecord = function (event) {
   }
 }
 
-// 列表 - 更新事件
-Animation.listUpdate = function (event) {
-  this.updateDirections()
-}
-
 // 列表 - 打开事件
 Animation.listOpen = function (event) {
   Animation.editMotion(event.value)
@@ -4835,7 +4923,10 @@ Animation.listPopup = function (event) {
     label: get('insert'),
     click: () => {
       Animation.getNewMotionId(motionId => {
-        this.addNodeTo(Inspector.animMotion.create(motionId), item)
+        const motion = Inspector.animMotion.create(motionId)
+        this.addNodeTo(motion, item)
+        // 打开新建动作的检查器页面
+        Inspector.open('animMotion', motion)
       })
     },
   }, {
@@ -4881,6 +4972,15 @@ Animation.listChange = function (event) {
 Animation.listPageResize = function (event) {
   Animation.list.updateHead()
   Animation.list.resize()
+}
+
+// 方向列表 - 指针按下事件
+Animation.dirListPointerdown = function (event) {
+  const element = event.target
+  if (element.tagName === 'ANIM-DIR' && !element.hasClass('selected')) {
+    Animation.setDirection(element.direction)
+    Inspector.close()
+  }
 }
 
 // 时间轴页面 - 调整大小事件
@@ -4988,6 +5088,7 @@ Animation.layerListPointerdown = function (event) {
           Animation.history.save({
             type: 'animation-layer-hidden',
             motion: Animation.motion,
+            direction: Animation.direction,
             item: item,
             oldValues: backups,
             newValue: !hidden,
@@ -5003,6 +5104,7 @@ Animation.layerListPointerdown = function (event) {
           Animation.history.save({
             type: 'animation-layer-locked',
             motion: Animation.motion,
+            direction: Animation.direction,
             item: item,
             oldValues: backups,
             newValue: !locked,
@@ -5033,6 +5135,7 @@ Animation.layerListRecord = function (event) {
       Animation.history.save({
         type: `animation-layer-${type}`,
         motion: Animation.motion,
+        direction: Animation.direction,
         response: response,
       })
       break
@@ -5648,59 +5751,6 @@ Animation.list.updateText = function (item) {
   }
 }
 
-// 列表 - 创建动作方向文本
-Animation.list.createDirText = function (item) {
-  const dirText = document.createElement('text')
-  dirText.addClass('animation-motion-direction')
-  item.element.appendChild(dirText)
-  item.element.dirText = dirText
-}
-
-// 列表 - 更新动作方向文本
-Animation.list.updateDirText = function (item) {
-  const {direction, dirText} = item.element
-  if (direction !== undefined) {
-    dirText.textContent = direction
-  }
-}
-
-// 列表 - 更新所有动作方向
-Animation.list.updateDirections = function (replace = false) {
-  let dirMap
-  switch (Animation.mode) {
-    case '1-dir':
-    case '1-dir-mirror':
-      dirMap = {0: ''}
-      break
-    case '2-dir':
-      dirMap = {0: ' ←', 1: ' →'}
-      break
-    case '3-dir-mirror':
-      dirMap = {0: ' ↓', 1: ' →', 2: ' ↑'}
-      break
-    case '4-dir':
-      dirMap = {0: ' ↓', 1: ' ←', 2: ' →', 3: ' ↑'}
-      break
-    case '5-dir-mirror':
-      dirMap = {0: ' ↓', 1: ' →', 2: ' ↑', 3: ' ↘', 4: ' ↗'}
-      break
-    case '8-dir':
-      dirMap = {0: ' ↓', 1: ' ←', 2: ' →', 3: ' ↑', 4: ' ↙', 5: ' ↘', 6: ' ↖', 7: ' ↗'}
-      break
-  }
-  const dirCounters = {}
-  for (const item of this.data) {
-    const {id, element} = item
-    if (dirCounters[id] === undefined) {
-      dirCounters[id] = 0
-    }
-    element.direction = dirMap[dirCounters[id]++] ?? ''
-    if (replace && element.dirText?.parentNode) {
-      element.dirText.textContent = element.direction
-    }
-  }
-}
-
 // 列表 - 创建循环图标
 Animation.list.createLoopIcon = function (item) {
   const {element} = item
@@ -5790,13 +5840,12 @@ Animation.layerList.delete = function (item) {
 }
 
 // 图层列表 - 恢复动作对象
-Animation.layerList.restoreMotion = function (motion) {
-  if (Animation.motion !== motion) {
-    const {update} = this
-    this.update = Function.empty
-    Animation.setMotion(motion)
-    this.update = update
-  }
+Animation.layerList.restoreMotion = function (motion, direction) {
+  const {update} = this
+  this.update = Function.empty
+  Animation.setMotion(motion)
+  Animation.setDirection(direction)
+  this.update = update
 }
 
 // 图层列表 - 重写创建图标方法
@@ -5858,10 +5907,11 @@ Animation.timeline.updateHead = function () {
 }
 
 // 时间轴列表 - 恢复动作和图层对象
-Animation.outerTimelineList.restoreMotionAndLayer = function (motion, layer) {
+Animation.outerTimelineList.restoreMotionAndLayer = function (motion, direction, layer) {
   const {updateTimeline} = Animation
   Animation.updateTimeline = Function.empty
   Animation.setMotion(motion)
+  Animation.setDirection(direction)
   Animation.layerList.expandToItem(layer)
   Animation.updateTimeline = updateTimeline
 }
@@ -5913,7 +5963,10 @@ Animation.Player = class AnimationPlayer {
   anchorY   //:number
   mirror    //:string
   data      //:object
-  suffix    //:string
+  dirMap    //:array
+  dirCases  //:array
+  angle     //:number
+  direction //:number
   motion    //:object
   motions   //:object
   sprites   //:object
@@ -5930,8 +5983,10 @@ Animation.Player = class AnimationPlayer {
     this.anchorY = 0
     this.mirror = 'none'
     this.data = animation
-    this.dirMap = AnimationPlayer.dirMaps[animation.mode]
-    this.suffix = ''
+    this.dirMap = Array.empty
+    this.dirCases = null
+    this.angle = 0
+    this.direction = -1
     this.motion = null
     this.motions = {}
     this.sprites = {}
@@ -5943,19 +5998,61 @@ Animation.Player = class AnimationPlayer {
     this.loadMotions()
   }
 
-  // 切换动作
-  switch(key, suffix = '') {
+  // 设置动作
+  setMotion(key) {
     const motions = this.motions
-    const motion =
-    motions[key + suffix] ??
-    motions[key]
-    this.suffix = suffix
+    const motion = motions[key]
     if (motion !== undefined &&
       this.motion !== motion) {
       this.motion = motion
+      this.dirCases = motion.dirCases
+      // 如果方向模式发生变化，重新计算方向
+      const dirMap = AnimationPlayer.dirMaps[motion.mode]
+      if (this.dirMap !== dirMap) {
+        this.dirMap = dirMap
+        this.direction = -1
+        this.setAngle(this.angle)
+      } else {
+        this.loadDirCase()
+      }
+      return true
+    }
+    return false
+  }
+
+  // 加载动画方向
+  loadDirCase() {
+    const params = this.dirMap[this.direction]
+    if (params) {
+      const dirCase = this.dirCases[params.index]
+      this.layers = dirCase.layers
+      // 销毁上下文中的粒子发射器
+      // 加载当前动作的上下文
       this.destroyContextEmitters()
       this.loadContexts(this.contexts)
       this.computeLength()
+    }
+  }
+
+  // 设置动画角度
+  setAngle(angle) {
+    this.angle = angle
+    const directions = this.dirMap.length
+    // 将角度映射为0~方向数量的数值
+    const proportion = Math.modRadians(angle) / (Math.PI * 2)
+    const section = (proportion * directions + 0.5) % directions
+    const direction = Math.floor(section)
+    return this.setDirection(direction)
+  }
+
+  // 设置动画方向
+  setDirection(direction) {
+    if (this.direction !== direction) {
+      const params = this.dirMap[direction]
+      if (!params) return false
+      this.direction = direction
+      this.mirror = params.mirror
+      this.loadDirCase()
       return true
     }
     return false
@@ -6045,18 +6142,9 @@ Animation.Player = class AnimationPlayer {
 
   // 加载动作哈希表
   loadMotions() {
-    const dirSuffixList = AnimationPlayer.dirSuffixLists[this.data.mode]
-    const dirCounters = {}
     const motionMap = this.motions
     for (const motion of this.data.motions) {
-      if (dirCounters[motion.id] === undefined) {
-        dirCounters[motion.id] = 0
-      }
-      const suffixIndex = dirCounters[motion.id]++
-      const suffix = dirSuffixList[suffixIndex]
-      if (suffix !== undefined) {
-        motionMap[motion.id + suffix] = motion
-      }
+      motionMap[motion.id] = motion
     }
   }
 
@@ -6306,11 +6394,13 @@ Animation.Player = class AnimationPlayer {
     this.destroyContextEmitters()
     // 销毁编辑器元素
     for (const motion of Object.values(this.motions)) {
-      if (motion.loaded === undefined) continue
-      delete motion.loaded
-      for (const layer of motion.layers) {
-        for (const frame of layer.frames) {
-          delete frame.key
+      for (const dirCase of motion.dirCases) {
+        if (dirCase.loaded === undefined) continue
+        delete dirCase.loaded
+        for (const layer of dirCase.layers) {
+          for (const frame of layer.frames) {
+            delete frame.key
+          }
         }
       }
     }
@@ -6355,77 +6445,56 @@ Animation.Player = class AnimationPlayer {
     }
   }
 
-  // 获取指定角度的方向参数
-  getDirParamsByAngle(angle) {
-    const dirMap = this.dirMap
-    const directions = dirMap.length
-    const destAngle = Math.radians(angle)
-    const proportion = Math.modRadians(destAngle) / (Math.PI * 2)
-    const direction = Math.floor((proportion * directions + 0.5) % directions)
-    return dirMap[direction]
-  }
-
   // 静态 - 动画属性
   static step = 0
   static matrix = new Matrix()
   static lightSamplingModes = {raw: 0, global: 1, anchor: 2}
   static stage
 
-  // 各种模式的动画方向后缀列表
-  static dirSuffixLists = {
-    '1-dir': [''],
-    '1-dir-mirror': [''],
-    '2-dir': ['.left', '.right'],
-    '3-dir-mirror': ['.down', '.right', '.up'],
-    '4-dir': ['.down', '.left', '.right', '.up'],
-    '5-dir-mirror': ['.down', '.right', '.up', '.down-right', '.up-right'],
-    '8-dir': ['.down', '.left', '.right', '.up', '.down-left', '.down-right', '.up-left', '.up-right'],
-  }
-
   // 各种模式的动画方向映射表
   static dirMaps = {
     '1-dir': [
-      {suffix: '', mirror: 'none'},
+      {index: 0, mirror: 'none'},
     ],
     '1-dir-mirror': [
-      {suffix: '', mirror: 'none'},
-      {suffix: '', mirror: 'horizontal'},
+      {index: 0, mirror: 'none'},
+      {index: 0, mirror: 'horizontal'},
     ],
     '2-dir': [
-      {suffix: '.right', mirror: 'none'},
-      {suffix: '.left', mirror: 'none'},
+      {index: 1, mirror: 'none'},
+      {index: 0, mirror: 'none'},
     ],
     '3-dir-mirror': [
-      {suffix: '.right', mirror: 'none'},
-      {suffix: '.down', mirror: 'none'},
-      {suffix: '.right', mirror: 'horizontal'},
-      {suffix: '.up', mirror: 'none'},
+      {index: 1, mirror: 'none'},
+      {index: 0, mirror: 'none'},
+      {index: 1, mirror: 'horizontal'},
+      {index: 2, mirror: 'none'},
     ],
     '4-dir': [
-      {suffix: '.right', mirror: 'none'},
-      {suffix: '.down', mirror: 'none'},
-      {suffix: '.left', mirror: 'none'},
-      {suffix: '.up', mirror: 'none'},
+      {index: 2, mirror: 'none'},
+      {index: 0, mirror: 'none'},
+      {index: 1, mirror: 'none'},
+      {index: 3, mirror: 'none'},
     ],
     '5-dir-mirror': [
-      {suffix: '.right', mirror: 'none'},
-      {suffix: '.down-right', mirror: 'none'},
-      {suffix: '.down', mirror: 'none'},
-      {suffix: '.down-right', mirror: 'horizontal'},
-      {suffix: '.right', mirror: 'horizontal'},
-      {suffix: '.up-right', mirror: 'horizontal'},
-      {suffix: '.up', mirror: 'none'},
-      {suffix: '.up-right', mirror: 'none'},
+      {index: 1, mirror: 'none'},
+      {index: 3, mirror: 'none'},
+      {index: 0, mirror: 'none'},
+      {index: 3, mirror: 'horizontal'},
+      {index: 1, mirror: 'horizontal'},
+      {index: 4, mirror: 'horizontal'},
+      {index: 2, mirror: 'none'},
+      {index: 4, mirror: 'none'},
     ],
     '8-dir': [
-      {suffix: '.right', mirror: 'none'},
-      {suffix: '.down-right', mirror: 'none'},
-      {suffix: '.down', mirror: 'none'},
-      {suffix: '.down-left', mirror: 'none'},
-      {suffix: '.left', mirror: 'none'},
-      {suffix: '.up-left', mirror: 'none'},
-      {suffix: '.up', mirror: 'none'},
-      {suffix: '.up-right', mirror: 'none'},
+      {index: 2, mirror: 'none'},
+      {index: 5, mirror: 'none'},
+      {index: 0, mirror: 'none'},
+      {index: 4, mirror: 'none'},
+      {index: 1, mirror: 'none'},
+      {index: 6, mirror: 'none'},
+      {index: 3, mirror: 'none'},
+      {index: 7, mirror: 'none'},
     ],
   }
 
@@ -6436,11 +6505,10 @@ Animation.Player = class AnimationPlayer {
 
   // 静态 - 加载动画图层上下文列表
   static loadContexts(animation, contexts) {
-    const {motion} = animation
     contexts.count = 0
-    if (motion !== null) {
+    if (animation.layers !== null) {
       // 如果动画已设置动作，加载所有图层上下文
-      this.#loadContext(animation, motion.layers, null, contexts)
+      this.#loadContext(animation, animation.layers, null, contexts)
     }
   }
 
@@ -6943,6 +7011,7 @@ Curve.easingIdInput = function (event) {
   Animation.history.save({
     type: 'animation-easing-change',
     motion: Animation.motion,
+    direction: Animation.direction,
     target: Animation.target,
     easingId: Curve.target.easingId,
   })
