@@ -23,6 +23,10 @@ const createEditorMenu = function () {
   const template = [{
     label: 'Menu',
     submenu: [{
+      label: 'Reload',
+      accelerator: 'F5',
+      role: 'forceReload',
+    }, {
       label: 'FullScreen',
       accelerator: 'F11',
       role: 'toggleFullScreen',
