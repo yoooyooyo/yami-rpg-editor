@@ -69,6 +69,7 @@ Command.initialize = function () {
   // 初始化相关对象
   CommandSuggestion.initialize()
   VariableGetter.initialize()
+  ObjectGetter.initialize()
   ActorGetter.initialize()
   SkillGetter.initialize()
   StateGetter.initialize()
@@ -217,7 +218,7 @@ Command.parseVariable = function (variable) {
   ? `{variable:${variable.key}}`
   : Command.parseGlobalVariable(variable.key)
   : variable.key
-  switch (variable.type.replace('[]', '')) {
+  switch (variable.type) {
     case 'local':
       return isConstantKey ? key : `${Local.get('variable.local')}[${key}]`
     case 'global':
@@ -406,9 +407,8 @@ Command.parseActor = function (actor) {
       return Command.parsePresetObject(actor.presetId)
     case 'variable': {
       const label = Local.get('actor.common')
-      const prop = Local.get('actor.variable')
       const variable = Command.parseVariable(actor.variable)
-      return `${label}(${prop}:${variable})`
+      return `${label}(${variable})`
     }
   }
 }
@@ -423,9 +423,8 @@ Command.parseSkill = function (skill) {
     case 'by-key': {
       const actor = Command.parseActor(skill.actor)
       const label = Local.get('skill.common')
-      const prop = Local.get('skill.by-key')
       const key = Command.parseGroupEnumString('shortcut-key', skill.key)
-      return `${actor} -> ${label}(${prop}:${key})`
+      return `${actor} -> ${label}<${key}>`
     }
     case 'by-id': {
       const actor = Command.parseActor(skill.actor)
@@ -434,9 +433,8 @@ Command.parseSkill = function (skill) {
     }
     case 'variable': {
       const label = Local.get('skill.common')
-      const prop = Local.get('skill.variable')
       const variable = Command.parseVariable(skill.variable)
-      return `${label}(${prop}:${variable})`
+      return `${label}(${variable})`
     }
   }
 }
@@ -455,9 +453,8 @@ Command.parseState = function (state) {
     }
     case 'variable': {
       const label = Local.get('state.common')
-      const prop = Local.get('state.variable')
       const variable = Command.parseVariable(state.variable)
-      return `${label}(${prop}:${variable})`
+      return `${label}(${variable})`
     }
   }
 }
@@ -472,15 +469,13 @@ Command.parseEquipment = function (equipment) {
     case 'by-slot': {
       const actor = Command.parseActor(equipment.actor)
       const label = Local.get('equipment.common')
-      const prop = Local.get('equipment.by-slot')
       const slot = Command.parseGroupEnumString('equipment-slot', equipment.slot)
-      return `${actor} -> ${label}(${prop}:${slot})`
+      return `${actor} -> ${label}<${slot}>`
     }
     case 'variable': {
       const label = Local.get('equipment.common')
-      const prop = Local.get('equipment.variable')
       const variable = Command.parseVariable(equipment.variable)
-      return `${label}(${prop}:${variable})`
+      return `${label}(${variable})`
     }
   }
 }
@@ -495,15 +490,13 @@ Command.parseItem = function (item) {
     case 'by-key': {
       const actor = Command.parseActor(item.actor)
       const label = Local.get('item.common')
-      const prop = Local.get('item.by-key')
       const key = Command.parseGroupEnumString('shortcut-key', item.key)
-      return `${actor} -> ${label}(${prop}:${key})`
+      return `${actor} -> ${label}<${key}>`
     }
     case 'variable': {
       const label = Local.get('item.common')
-      const prop = Local.get('item.variable')
       const variable = Command.parseVariable(item.variable)
-      return `${label}(${prop}:${variable})`
+      return `${label}(${variable})`
     }
   }
 }
@@ -564,9 +557,8 @@ Command.parseTrigger = function (trigger) {
       return Local.get('trigger.latest')
     case 'variable': {
       const label = Local.get('trigger.common')
-      const prop = Local.get('trigger.variable')
       const variable = Command.parseVariable(trigger.variable)
-      return `${label}(${prop}:${variable})`
+      return `${label}(${variable})`
     }
   }
 }
@@ -582,9 +574,8 @@ Command.parseLight = function (light) {
       return Command.parsePresetObject(light.presetId)
     case 'variable': {
       const label = Local.get('light.common')
-      const prop = Local.get('light.variable')
       const variable = Command.parseVariable(light.variable)
-      return `${label}(${prop}:${variable})`
+      return `${label}(${variable})`
     }
   }
 }
@@ -612,9 +603,8 @@ Command.parseElement = function (element) {
     }
     case 'variable': {
       const label = Local.get('element.common')
-      const prop = Local.get('element.variable')
       const variable = Command.parseVariable(element.variable)
-      return `${label}(${prop}:${variable})`
+      return `${label}(${variable})`
     }
   }
 }
@@ -1125,6 +1115,20 @@ Command.cases.setBoolean = {
         $('#setBoolean-parameter-key'),
       ]},
     ])
+
+    // 设置类型写入事件，切换变量输入框的过滤器
+    $('#setBoolean-operand-type').on('write', event => {
+      let filter = 'all'
+      switch (event.value) {
+        case 'variable':
+          filter = 'boolean'
+          break
+        case 'list':
+          filter = 'object'
+          break
+      }
+      $('#setBoolean-common-variable').filter = filter
+    })
   },
   parseOperation: function (operation) {
     switch (operation) {
@@ -1381,6 +1385,24 @@ Command.cases.setString = {
       ]},
     ])
 
+    // 设置类型写入事件，切换变量输入框的过滤器
+    $('#setString-operand-type').on('write', event => {
+      let filter = 'all'
+      switch (event.value) {
+        case 'variable':
+          filter = 'all'
+          break
+        case 'string':
+          filter = 'string'
+          break
+        case 'object':
+        case 'list':
+          filter = 'object'
+          break
+      }
+      $('#setString-operand-common-variable').filter = filter
+    })
+
     // 创建字符串方法选项
     $('#setString-operand-string-method').loadItems([
       {name: 'Char', value: 'char'},
@@ -1416,6 +1438,7 @@ Command.cases.setString = {
       {name: 'Skill - File ID', value: 'skill-file-id'},
       {name: 'State - File ID', value: 'state-file-id'},
       {name: 'Equipment - File ID', value: 'equipment-file-id'},
+      {name: 'Equipment - Slot', value: 'equipment-slot'},
       {name: 'Item - File ID', value: 'item-file-id'},
       {name: 'File - ID', value: 'file-id'},
     ])
@@ -1431,7 +1454,7 @@ Command.cases.setString = {
       {case: 'state-file-id', targets: [
         $('#setString-operand-common-state'),
       ]},
-      {case: 'equipment-file-id', targets: [
+      {case: ['equipment-file-id', 'equipment-slot'], targets: [
         $('#setString-operand-common-equipment'),
       ]},
       {case: 'item-file-id', targets: [
@@ -1666,7 +1689,8 @@ Command.cases.setString = {
             operand = {type, property, state}
             break
           }
-          case 'equipment-file-id': {
+          case 'equipment-file-id':
+          case 'equipment-slot': {
             const equipment = read('operand-common-equipment')
             operand = {type, property, equipment}
             break
@@ -1766,6 +1790,7 @@ Command.cases.setString = {
       case 'state-file-id':
         return `${Command.parseState(operand.state)} -> ${property}`
       case 'equipment-file-id':
+      case 'equipment-slot':
         return `${Command.parseEquipment(operand.equipment)} -> ${property}`
       case 'item-file-id':
         return `${Command.parseItem(operand.item)} -> ${property}`
@@ -2493,21 +2518,19 @@ Command.cases.forEach = {
       {name: 'Equipment', value: 'equipment'},
       {name: 'Inventory', value: 'inventory'},
       {name: 'Element', value: 'element'},
+      {name: 'Party Member', value: 'member'},
     ])
 
     // 设置数据关联元素
     $('#forEach-data').enableHiddenMode().relate([
       {case: 'list', targets: [
         $('#forEach-list'),
-        $('#forEach-variable'),
       ]},
       {case: ['skill', 'state', 'equipment', 'inventory'], targets: [
         $('#forEach-actor'),
-        $('#forEach-variable'),
       ]},
       {case: 'element', targets: [
         $('#forEach-element'),
-        $('#forEach-variable'),
       ]},
     ])
 
@@ -2517,12 +2540,12 @@ Command.cases.forEach = {
     })
   },
   parse: function ({data, list, actor, element, variable, commands}) {
+    const varName = Command.parseVariable(variable)
     const dataInfo = Local.get('command.forEach.' + data)
     const words = Command.words
     switch (data) {
       case 'list': {
         const listName = Command.parseVariable(list)
-        const varName = Command.parseVariable(variable)
         words.push(`${varName} = ${listName} -> ${dataInfo}`)
         break
       }
@@ -2530,17 +2553,18 @@ Command.cases.forEach = {
       case 'state':
       case 'equipment':
       case 'inventory': {
-        const varName = Command.parseVariable(variable)
         const actorInfo = Command.parseActor(actor)
         words.push(`${varName} = ${actorInfo} -> ${dataInfo}`)
         break
       }
       case 'element': {
-        const varName = Command.parseVariable(variable)
         const elInfo = Command.parseElement(element)
         words.push(`${varName} = ${elInfo} -> ${dataInfo}`)
         break
       }
+      case 'member':
+        words.push(`${varName} = ${dataInfo}`)
+        break
     }
     return [
       {color: 'flow'},
@@ -2571,15 +2595,15 @@ Command.cases.forEach = {
     const read = getElementReader('forEach')
     const data = read('data')
     const commands = Command.cases.forEach.commands
+    const variable = read('variable')
+    if (VariableGetter.isNone(variable)) {
+      return $('#forEach-variable').getFocus()
+    }
     switch (data) {
       case 'list': {
         const list = read('list')
-        const variable = read('variable')
         if (VariableGetter.isNone(list)) {
           return $('#forEach-list').getFocus()
-        }
-        if (VariableGetter.isNone(variable)) {
-          return $('#forEach-variable').getFocus()
         }
         Command.save({data, list, variable, commands})
         break
@@ -2589,22 +2613,17 @@ Command.cases.forEach = {
       case 'equipment':
       case 'inventory': {
         const actor = read('actor')
-        const variable = read('variable')
-        if (VariableGetter.isNone(variable)) {
-          return $('#forEach-variable').getFocus()
-        }
         Command.save({data, actor, variable, commands})
         break
       }
       case 'element': {
         const element = read('element')
-        const variable = read('variable')
-        if (VariableGetter.isNone(variable)) {
-          return $('#forEach-variable').getFocus()
-        }
         Command.save({data, element, variable, commands})
         break
       }
+      case 'member':
+        Command.save({data, variable, commands})
+        break
     }
   },
 }
@@ -2817,6 +2836,19 @@ Command.cases.callEvent = {
   },
 }
 
+// 停止事件
+Command.cases.stopEvent = {
+  parse: function () {
+    return [
+      {color: 'flow'},
+      {text: Local.get('command.stopEvent')},
+    ]
+  },
+  save: function () {
+    Command.save({})
+  },
+}
+
 // 设置事件
 Command.cases.setEvent = {
   initialize: function () {
@@ -2824,7 +2856,6 @@ Command.cases.setEvent = {
 
     // 创建操作选项
     $('#setEvent-operation').loadItems([
-      {name: 'Stop', value: 'stop'},
       {name: 'Stop Propagation', value: 'stop-propagation'},
       {name: 'Pause and Save to Variable', value: 'pause'},
       {name: 'Continue and Reset Variable', value: 'continue'},
@@ -2881,7 +2912,7 @@ Command.cases.setEvent = {
     ]
   },
   load: function ({
-    operation   = 'stop',
+    operation   = 'stop-propagation',
     variable    = {type: 'global', key: ''},
     eventId     = '',
     choiceIndex = 0,
@@ -2897,7 +2928,6 @@ Command.cases.setEvent = {
     const read = getElementReader('setEvent')
     const operation = read('operation')
     switch (operation) {
-      case 'stop':
       case 'stop-propagation':
       case 'prevent-scene-input-events':
       case 'restore-scene-input-events':
@@ -5475,33 +5505,56 @@ Command.cases.changeActorEquipment = {
     $('#changeActorEquipment-operation').loadItems([
       {name: 'Add', value: 'add'},
       {name: 'Remove', value: 'remove'},
+      {name: 'Add Instance', value: 'add-instance'},
+      {name: 'Remove Instance', value: 'remove-instance'},
+      {name: 'Remove Slot', value: 'remove-slot'},
     ])
 
     // 设置关联元素
     $('#changeActorEquipment-operation').enableHiddenMode().relate([
       {case: 'add', targets: [
+        $('#changeActorEquipment-slot'),
+        $('#changeActorEquipment-equipmentId'),
+      ]},
+      {case: 'remove', targets: [
+        $('#changeActorEquipment-equipmentId'),
+      ]},
+      {case: 'add-instance', targets: [
+        $('#changeActorEquipment-slot'),
         $('#changeActorEquipment-equipment'),
+      ]},
+      {case: 'remove-instance', targets: [
+        $('#changeActorEquipment-equipment'),
+      ]},
+      {case: 'remove-slot', targets: [
+        $('#changeActorEquipment-slot'),
       ]},
     ])
   },
-  parseOperation: function (operation) {
-    switch (operation) {
-      case 'add':
-      case 'remove':
-        return Local.get('command.changeActorEquipment.' + operation)
-    }
-  },
-  parse: function ({actor, operation, equipment, slot}) {
+  parse: function ({actor, operation, slot, equipmentId, equipment}) {
     const words = Command.words
     .push(Command.parseActor(actor))
-    .push(this.parseOperation(operation))
+    .push(Local.get('command.changeActorEquipment.' + operation))
     switch (operation) {
-      case 'add':
-        words
-        .push(Command.parseGroupEnumString('equipment-slot', slot))
-        .push(Command.parseEquipment(equipment))
+      case 'add': {
+        const equipSlot = Command.parseGroupEnumString('equipment-slot', slot)
+        const equipName = Command.parseFileName(equipmentId)
+        words.push(`${equipSlot} = ${equipName}`)
         break
+      }
       case 'remove':
+        words.push(Command.parseFileName(equipmentId))
+        break
+      case 'add-instance': {
+        const equipSlot = Command.parseGroupEnumString('equipment-slot', slot)
+        const equipName = Command.parseEquipment(equipment)
+        words.push(`${equipSlot} = ${equipName}`)
+        break
+      }
+      case 'remove-instance':
+        words.push(Command.parseEquipment(equipment))
+        break
+      case 'remove-slot':
         words.push(Command.parseGroupEnumString('equipment-slot', slot))
         break
     }
@@ -5515,6 +5568,7 @@ Command.cases.changeActorEquipment = {
     actor       = {type: 'trigger'},
     operation   = 'add',
     slot        = '',
+    equipmentId = '',
     equipment   = {type: 'trigger'},
   }) {
     // 加载装备选项
@@ -5524,6 +5578,7 @@ Command.cases.changeActorEquipment = {
     const write = getElementWriter('changeActorEquipment')
     write('actor', actor)
     write('operation', operation)
+    write('equipmentId', equipmentId)
     write('equipment', equipment)
     $('#changeActorEquipment-slot').write2(slot)
     $('#changeActorEquipment-actor').getFocus()
@@ -5532,17 +5587,46 @@ Command.cases.changeActorEquipment = {
     const read = getElementReader('changeActorEquipment')
     const actor = read('actor')
     const operation = read('operation')
-    const slot = read('slot')
-    if (slot === '') {
-      return $('#changeActorEquipment-slot').getFocus()
-    }
     switch (operation) {
       case 'add': {
+        const slot = read('slot')
+        if (slot === '') {
+          return $('#changeActorEquipment-slot').getFocus()
+        }
+        const equipmentId = read('equipmentId')
+        if (equipmentId === '') {
+          return $('#changeActorEquipment-equipmentId').getFocus()
+        }
+        Command.save({actor, operation, slot, equipmentId})
+        break
+      }
+      case 'remove': {
+        const equipmentId = read('equipmentId')
+        if (equipmentId === '') {
+          return $('#changeActorEquipment-equipmentId').getFocus()
+        }
+        Command.save({actor, operation, equipmentId})
+        break
+      }
+      case 'add-instance': {
+        const slot = read('slot')
+        if (slot === '') {
+          return $('#changeActorEquipment-slot').getFocus()
+        }
         const equipment = read('equipment')
         Command.save({actor, operation, slot, equipment})
         break
       }
-      case 'remove':
+      case 'remove-instance': {
+        const equipment = read('equipment')
+        Command.save({actor, operation, equipment})
+        break
+      }
+      case 'remove-slot':
+        const slot = read('slot')
+        if (slot === '') {
+          return $('#changeActorEquipment-slot').getFocus()
+        }
         Command.save({actor, operation, slot})
         break
     }
@@ -6165,11 +6249,13 @@ Command.cases.discardTargets = {
       {name: 'Any', value: 'any'},
     ])
   },
-  parse: function ({actor, distance, selector}) {
+  parse: function ({actor, selector, distance}) {
     const words = Command.words
     .push(Command.parseActor(actor))
-    .push('>' + distance + 't')
     .push(Command.parseActorSelector(selector))
+    if (distance !== 0) {
+      words.push(`>= ${distance}t`)
+    }
     return [
       {color: 'actor'},
       {text: Local.get('command.discardTargets') + ': '},
@@ -6178,21 +6264,21 @@ Command.cases.discardTargets = {
   },
   load: function ({
     actor     = {type: 'trigger'},
-    distance  = 0,
     selector  = 'any',
+    distance  = 0,
   }) {
     const write = getElementWriter('discardTargets')
     write('actor', actor)
-    write('distance', distance)
     write('selector', selector)
+    write('distance', distance)
     $('#discardTargets-actor').getFocus()
   },
   save: function () {
     const read = getElementReader('discardTargets')
     const actor = read('actor')
-    const distance = read('distance')
     const selector = read('selector')
-    Command.save({actor, distance, selector})
+    const distance = read('distance')
+    Command.save({actor, selector, distance})
   },
 }
 
@@ -6877,14 +6963,9 @@ Command.cases.setShortcut = {
     $('#setShortcut-operation').enableHiddenMode().relate([
       {case: 'set-item-shortcut', targets: [
         $('#setShortcut-itemId'),
-        $('#setShortcut-key'),
       ]},
       {case: 'set-skill-shortcut', targets: [
         $('#setShortcut-skillId'),
-        $('#setShortcut-key'),
-      ]},
-      {case: 'delete-shortcut', targets: [
-        $('#setShortcut-key'),
       ]},
     ])
   },
@@ -6894,11 +6975,12 @@ Command.cases.setShortcut = {
     .push(Local.get('command.setShortcut.' + operation))
     const shortcutKey = Command.parseGroupEnumString('shortcut-key', key)
     switch (operation) {
-      case 'set-item-shortcut':
-        words.push(Command.parseFileName(itemId)).push(shortcutKey)
+      case 'set-item-shortcut': {
+        words.push(`${shortcutKey} = ${Command.parseFileName(itemId)}`)
         break
+      }
       case 'set-skill-shortcut':
-        words.push(Command.parseFileName(skillId)).push(shortcutKey)
+        words.push(`${shortcutKey} = ${Command.parseFileName(skillId)}`)
         break
       case 'delete-shortcut':
         words.push(shortcutKey)
@@ -6924,9 +7006,9 @@ Command.cases.setShortcut = {
     const write = getElementWriter('setShortcut')
     write('actor', actor)
     write('operation', operation)
+    write('key', key)
     write('itemId', itemId)
     write('skillId', skillId)
-    write('key', key)
     $('#setShortcut-operation').getFocus()
   },
   save: function () {
@@ -6943,7 +7025,7 @@ Command.cases.setShortcut = {
         if (itemId === '') {
           return $('#setShortcut-itemId').getFocus()
         }
-        Command.save({actor, operation, itemId, key})
+        Command.save({actor, operation, key, itemId})
         break
       }
       case 'set-skill-shortcut': {
@@ -6951,7 +7033,7 @@ Command.cases.setShortcut = {
         if (skillId === '') {
           return $('#setShortcut-skillId').getFocus()
         }
-        Command.save({actor, operation, skillId, key})
+        Command.save({actor, operation, key, skillId})
         break
       }
       case 'delete-shortcut':
@@ -7647,7 +7729,7 @@ Command.custom = {
     // 参数面板 - 调整大小时回调
     this.parameterPane.onResize = () => {
       const height = grid.clientHeight
-      this.windowFrame.style.height = `${height + 74}px`
+      this.windowFrame.style.height = `${height + 78}px`
       // 如果窗口被拖动过会重置位置，不过影响不大
       this.windowFrame.absolute(this.windowX, this.windowY)
     }
@@ -7852,7 +7934,7 @@ Command.custom = {
     this.commandNameMap = commandNameMap
     CommandSuggestion.windowLocalize()
     // 重新构建指令项目的父对象引用
-    NodeList.createParents(commands, this.customFolder)
+    TreeList.createParents(commands, this.customFolder)
   },
 
   // 窗口 - 本地化事件
@@ -7914,10 +7996,12 @@ CommandSuggestion.initialize = function () {
   list.creators.push(list.createCommandTip)
 
   // 加载指令数据
-  const path = 'commands.json'
-  this.data = FSP.readFile(path, 'utf8').then(
-    data => this.data = JSON.parse(data)
-  )
+  this.data = File.get({
+    local: 'commands.json',
+    type: 'json',
+  }).then(data => {
+    this.data = data
+  })
 
   // 侦听事件
   window.on('localize', this.windowLocalize)
@@ -8267,6 +8351,8 @@ EventEditor.initialize = function () {
     hittrigger: {name: 'HitTrigger', value: 'hittrigger'},
     hitactor: {name: 'HitActor', value: 'hitactor'},
     destroy: {name: 'Destroy', value: 'destroy'},
+    playerenter: {name: 'PlayerEnter', value: 'playerenter'},
+    playerleave: {name: 'PlayerLeave', value: 'playerleave'},
     actorenter: {name: 'ActorEnter', value: 'actorenter'},
     actorleave: {name: 'ActorLeave', value: 'actorleave'},
     skillcast: {name: 'SkillCast', value: 'skillcast'},
@@ -8339,6 +8425,8 @@ EventEditor.initialize = function () {
     ],
     region: [
       types.autorun,
+      types.playerenter,
+      types.playerleave,
       types.actorenter,
       types.actorleave,
     ],
@@ -8767,6 +8855,25 @@ NumberOperand.initialize = function () {
     ]},
   ])
 
+  // 设置类型写入事件，切换变量输入框的过滤器
+  $('#setNumber-operand-type').on('write', event => {
+    let filter = 'all'
+    switch (event.value) {
+      case 'variable':
+      case 'math':
+        filter = 'number'
+        break
+      case 'string':
+        filter = 'string'
+        break
+      case 'object':
+      case 'list':
+        filter = 'object'
+        break
+    }
+    $('#setNumber-operand-common-variable').filter = filter
+  })
+
   // 创建数学方法选项
   $('#setNumber-operand-math-method').loadItems([
     {name: 'Round', value: 'round'},
@@ -8834,6 +8941,10 @@ NumberOperand.initialize = function () {
     {name: 'Actor - Equipment Quantity', value: 'actor-inventory-equipment-quantity'},
     {name: 'Actor - Inventory Money', value: 'actor-inventory-money'},
     {name: 'Actor - Inventory Used Space', value: 'actor-inventory-used-space'},
+    {name: 'Actor - Inventory Version', value: 'actor-inventory-version'},
+    {name: 'Actor - Skill Version', value: 'actor-skill-version'},
+    {name: 'Actor - State Version', value: 'actor-state-version'},
+    {name: 'Actor - Equipment Version', value: 'actor-equipment-version'},
     {name: 'Actor - Anim Current Time', value: 'actor-animation-current-time'},
     {name: 'Actor - Anim Duration', value: 'actor-animation-duration'},
     {name: 'Actor - Anim Progress', value: 'actor-animation-progress'},
@@ -8846,6 +8957,8 @@ NumberOperand.initialize = function () {
     {name: 'State - Current Time', value: 'state-current-time'},
     {name: 'State - Duration', value: 'state-duration'},
     {name: 'State - Progress', value: 'state-progress'},
+    {name: 'Equipment - Order in Inventory', value: 'equipment-order'},
+    {name: 'Item - Order in Inventory', value: 'item-order'},
     {name: 'Item - Quantity', value: 'item-quantity'},
     {name: 'Trigger - Speed', value: 'trigger-speed'},
     {name: 'Trigger - Angle', value: 'trigger-angle'},
@@ -8866,6 +8979,10 @@ NumberOperand.initialize = function () {
       'actor-collision-weight',
       'actor-inventory-money',
       'actor-inventory-used-space',
+      'actor-inventory-version',
+      'actor-skill-version',
+      'actor-state-version',
+      'actor-equipment-version',
       'actor-animation-current-time',
       'actor-animation-duration',
       'actor-animation-progress'], targets: [
@@ -8889,7 +9006,10 @@ NumberOperand.initialize = function () {
     {case: ['state-current-time', 'state-duration', 'state-progress'], targets: [
       $('#setNumber-operand-common-state'),
     ]},
-    {case: 'item-quantity', targets: [
+    {case: 'equipment-order', targets: [
+      $('#setNumber-operand-common-equipment'),
+    ]},
+    {case: ['item-order', 'item-quantity'], targets: [
       $('#setNumber-operand-common-item'),
     ]},
     {case: ['trigger-speed', 'trigger-angle'], targets: [
@@ -8947,6 +9067,7 @@ NumberOperand.initialize = function () {
     {name: 'Elapsed Time', value: 'elapsed-time'},
     {name: 'Delta Time', value: 'delta-time'},
     {name: 'Raw Delta Time', value: 'raw-delta-time'},
+    {name: 'Number of Party Members', value: 'party-member-count'},
   ])
 
   // 侦听事件
@@ -9024,6 +9145,10 @@ NumberOperand.parseObjectProperty = function (operand) {
     case 'actor-collision-weight':
     case 'actor-inventory-money':
     case 'actor-inventory-used-space':
+    case 'actor-inventory-version':
+    case 'actor-skill-version':
+    case 'actor-state-version':
+    case 'actor-equipment-version':
     case 'actor-animation-current-time':
     case 'actor-animation-duration':
     case 'actor-animation-progress':
@@ -9035,7 +9160,7 @@ NumberOperand.parseObjectProperty = function (operand) {
     case 'actor-cooldown-time':
     case 'actor-cooldown-duration':
     case 'actor-cooldown-progress': {
-      const key = Command.parseVariableString(operand.key)
+      const key = Command.parseVariableEnum('cooldown-key', operand.key)
       return `${Command.parseActor(operand.actor)} -> ${property}(${key})`
     }
     case 'skill-cooldown-time':
@@ -9046,6 +9171,9 @@ NumberOperand.parseObjectProperty = function (operand) {
     case 'state-duration':
     case 'state-progress':
       return `${Command.parseState(operand.state)} -> ${property}`
+    case 'equipment-order':
+      return `${Command.parseEquipment(operand.equipment)} -> ${property}`
+    case 'item-order':
     case 'item-quantity':
       return `${Command.parseItem(operand.item)} -> ${property}`
     case 'trigger-speed':
@@ -9148,6 +9276,11 @@ NumberOperand.open = function (operand = {
     $('#setNumber-operand-operation').getFocus()
   }
 
+  // 加载快捷键选项
+  $('#setNumber-operand-cooldown-key').loadItems(
+    Enum.getStringItems('cooldown-key')
+  )
+
   // 写入数据
   const write = getElementWriter('setNumber-operand')
   let constantValue = 0
@@ -9168,9 +9301,10 @@ NumberOperand.open = function (operand = {
   let commonActor = {type: 'trigger'}
   let commonSkill = {type: 'trigger'}
   let commonState = {type: 'trigger'}
+  let commonEquipment = {type: 'trigger'}
   let commonItem = {type: 'trigger'}
   let commonTrigger = {type: 'trigger'}
-  let cooldownKey = ''
+  let cooldownKey = Enum.getDefStringId('cooldown-key')
   let listIndex = 0
   let parameterKey = ''
   let otherData = 'trigger-button'
@@ -9202,6 +9336,7 @@ NumberOperand.open = function (operand = {
       commonActor = operand.actor ?? commonActor
       commonSkill = operand.skill ?? commonSkill
       commonState = operand.state ?? commonState
+      commonEquipment = operand.equipment ?? commonEquipment
       commonItem = operand.item ?? commonItem
       commonTrigger = operand.trigger ?? commonTrigger
       cooldownKey = operand.key ?? cooldownKey
@@ -9236,6 +9371,7 @@ NumberOperand.open = function (operand = {
   write('common-actor', commonActor)
   write('common-skill', commonSkill)
   write('common-state', commonState)
+  write('common-equipment', commonEquipment)
   write('common-item', commonItem)
   write('common-trigger', commonTrigger)
   write('string-search', stringSearch)
@@ -9350,6 +9486,10 @@ NumberOperand.save = function () {
         case 'actor-collision-weight':
         case 'actor-inventory-money':
         case 'actor-inventory-used-space':
+        case 'actor-inventory-version':
+        case 'actor-skill-version':
+        case 'actor-state-version':
+        case 'actor-equipment-version':
         case 'actor-animation-current-time':
         case 'actor-animation-duration':
         case 'actor-animation-progress': {
@@ -9400,6 +9540,12 @@ NumberOperand.save = function () {
           operand = {operation, type, property, state}
           break
         }
+        case 'equipment-order': {
+          const equipment = read('common-equipment')
+          operand = {operation, type, property, equipment}
+          break
+        }
+        case 'item-order':
         case 'item-quantity': {
           const item = read('common-item')
           operand = {operation, type, property, item}
@@ -9649,6 +9795,32 @@ IfCondition.initialize = function () {
       $('#if-condition-other-key'),
     ]},
   ])
+
+  // 设置类型写入事件，切换变量输入框的过滤器
+  $('#if-condition-type').on('write', event => {
+    let filter1 = 'all'
+    let filter2 = 'all'
+    switch (event.value) {
+      case 'boolean':
+        filter1 = filter2 = 'boolean'
+        break
+      case 'number':
+        filter1 = filter2 = 'number'
+        break
+      case 'string':
+        filter1 = filter2 = 'string'
+        break
+      case 'object':
+        filter1 = filter2 = 'object'
+        break
+      case 'list':
+        filter1 = 'object'
+        filter2 = 'all'
+        break
+    }
+    $('#if-condition-common-variable').filter = filter1
+    $('#if-condition-operand-variable').filter = filter2
+  })
 
   // 创建布尔值操作选项
   $('#if-condition-boolean-operation').loadItems([
@@ -12377,12 +12549,18 @@ VariableGetter.initialize = function () {
     item => item.value !== 'global'
   )
   const objectTypes = [
-    types['local'],
-    types['global'],
+    types.local,
+    types.global,
+    types.element,
+  ]
+  const objectTypes2 = [
+    types.local,
+    types.global,
   ]
   this.types = {
     all: allTypes,
     object: objectTypes,
+    object2: objectTypes2,
     writable: writableTypes,
     deletable: deletableTypes,
   }
@@ -12434,17 +12612,26 @@ VariableGetter.open = function (target) {
     case 'number':
     case 'string':
       $('#variableGetter-type').loadItems(types.all)
-      $('#variableGetter-global-key').setAttribute('filter', filter)
+      $('#variableGetter-global-key').filter = filter
       break
     case 'object':
-      $('#variableGetter-type').loadItems(types.object)
-      $('#variableGetter-global-key').setAttribute('filter', filter)
+      // 如果已经打开了变量访问器窗口，避免冲突使用新窗口
+      if (Window.isWindowOpen('variableGetter')) {
+        return ObjectGetter.open(target)
+      }
+      // 打开元素访问器时则过滤掉元素属性选项
+      $('#variableGetter-type').loadItems(
+        !Window.isWindowOpen('elementGetter')
+      ? types.object
+      : types.object2
+      )
+      $('#variableGetter-global-key').filter = filter
       break
     case 'writable-boolean':
     case 'writable-number':
     case 'writable-string':
       $('#variableGetter-type').loadItems(types.writable)
-      $('#variableGetter-global-key').setAttribute('filter', filter.slice(9))
+      $('#variableGetter-global-key').filter = filter.slice(9)
       break
     case 'deletable':
       $('#variableGetter-type').loadItems(types.deletable)
@@ -12465,7 +12652,13 @@ VariableGetter.open = function (target) {
   let equipment = {type: 'trigger'}
   let item = {type: 'trigger'}
   let element = {type: 'trigger'}
-  switch (type.replace('[]', '')) {
+  switch (type) {
+    case 'local':
+      commonKey = key
+      break
+    case 'global':
+      globalKey = key
+      break
     case 'actor':
       this.loadPresetKeys(type)
       actor = variable.actor
@@ -12496,12 +12689,6 @@ VariableGetter.open = function (target) {
       element = variable.element
       presetKey = key
       break
-    case 'global':
-      globalKey = key
-      break
-    default:
-      commonKey = key
-      break
   }
   const write = getElementWriter('variableGetter')
   this.keyBox.loadItems(Attribute.getAttributeItems('none'))
@@ -12530,6 +12717,7 @@ VariableGetter.loadPresetKeys = function (group) {
     case 'boolean':
     case 'number':
     case 'string':
+    case 'object':
       type = this.filter
       break
     case 'writable-boolean':
@@ -12595,6 +12783,12 @@ VariableGetter.confirm = function (event) {
   let getter
   let key
   switch (type) {
+    case 'local':
+      key = read('common-key').trim()
+      if (key === '') {
+        return $('#variableGetter-common-key').getFocus()
+      }
+      break
     case 'global': {
       key = read('global-key')
       const variable = Data.variables.map[key]
@@ -12621,14 +12815,8 @@ VariableGetter.confirm = function (event) {
         return $('#variableGetter-preset-key').getFocus()
       }
       break
-    default:
-      key = read('common-key').trim()
-      if (key === '') {
-        return $('#variableGetter-common-key').getFocus()
-      }
-      break
   }
-  switch (type.replace('[]', '')) {
+  switch (type) {
     case 'local':
     case 'global':
       getter = {type, key}
@@ -12667,6 +12855,91 @@ VariableGetter.confirm = function (event) {
   this.target.input(getter)
   Window.close('variableGetter')
 }.bind(VariableGetter)
+
+// ******************************** 对象变量访问器窗口 ********************************
+
+const ObjectGetter = {
+  // properties
+  target: null,
+  types: null,
+  // methods
+  initialize: null,
+  open: null,
+  // events
+  confirm: null,
+}
+
+// 初始化
+ObjectGetter.initialize = function () {
+  // 设置对象变量类型关联元素
+  $('#objectGetter-type').enableHiddenMode().relate([
+    {case: 'local', targets: [$('#objectGetter-common-key')]},
+    {case: 'global', targets: [$('#objectGetter-global-key')]},
+  ])
+
+  // 侦听事件
+  $('#objectGetter-confirm').on('click', this.confirm)
+}
+
+// 打开窗口
+ObjectGetter.open = function (target) {
+  this.target = target
+  Window.open('objectGetter')
+
+  // 创建对象变量类型选项
+  // 打开元素访问器时则过滤掉元素属性选项
+  $('#objectGetter-type').loadItems(
+    !Window.isWindowOpen('elementGetter')
+  ? VariableGetter.types.object
+  : VariableGetter.types.object2
+  )
+
+  const variable = target.dataValue
+  const type = variable.type
+  let commonKey = ''
+  let globalKey = ''
+  switch (type) {
+    case 'local':
+      commonKey = variable.key
+      break
+    case 'global':
+      globalKey = variable.key
+      break
+  }
+  const write = getElementWriter('objectGetter')
+  write('type', type)
+  write('common-key', commonKey)
+  write('global-key', globalKey)
+  $('#objectGetter-type').getFocus()
+}
+
+// 确定按钮 - 鼠标点击事件
+ObjectGetter.confirm = function (event) {
+  const read = getElementReader('objectGetter')
+  const type = read('type')
+  let getter
+  switch (type) {
+    case 'local': {
+      const key = read('common-key').trim()
+      if (!key) {
+        return $('#objectGetter-common-key').getFocus()
+      }
+      getter = {type, key}
+      break
+    }
+    case 'global': {
+      const key = read('global-key')
+      const variable = Data.variables.map[key]
+      if (typeof variable?.value !== 'object') {
+        return $('#objectGetter-global-key').getFocus()
+      }
+      getter = {type, key}
+      break
+    }
+  }
+  this.target.input(getter)
+  Window.close('objectGetter')
+}.bind(ObjectGetter)
 
 // ******************************** 角色访问器窗口 ********************************
 
@@ -13075,7 +13348,7 @@ EquipmentGetter.open = function (target) {
 
   let actor = {type: 'trigger'}
   let slot = Enum.getDefStringId('equipment-slot')
-  let variable = {type: 'local', slot: ''}
+  let variable = {type: 'local', key: ''}
   const equipment = target.dataValue
   switch (equipment.type) {
     case 'trigger':
@@ -14167,7 +14440,7 @@ CustomCommand.apply = function (event) {
     if (event instanceof Event) {
       commands = Object.clone(commands)
     } else {
-      NodeList.deleteCaches(commands)
+      TreeList.deleteCaches(commands)
     }
     Data.commands = commands
     File.planToSave(Data.manifest.project.commands)

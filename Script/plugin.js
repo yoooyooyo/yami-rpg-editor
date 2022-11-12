@@ -1485,7 +1485,7 @@ PluginManager.apply = function (event) {
     if (event instanceof Event) {
       plugins = Object.clone(plugins)
     } else {
-      NodeList.deleteCaches(plugins)
+      TreeList.deleteCaches(plugins)
     }
     Data.plugins = plugins
     File.planToSave(Data.manifest.project.plugins)

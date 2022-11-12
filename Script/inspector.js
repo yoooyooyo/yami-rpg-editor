@@ -995,7 +995,6 @@ FileTileset.create = function (type) {
     case 'auto':
       return {
         type: 'auto',
-        tiles: [0],
         width: 1,
         height: 1,
         tileWidth: 32,
@@ -1003,6 +1002,7 @@ FileTileset.create = function (type) {
         globalOffsetX: 0,
         globalOffsetY: 0,
         globalPriority: 0,
+        tiles: [0],
         priorities: [0],
       }
   }
@@ -1149,8 +1149,9 @@ FileActor.initialize = function () {
 
   // 侦听事件
   $('#fileActor-animationId').on('write', this.animationIdWrite)
-  $(`#fileActor-portrait, #fileActor-animationId, #fileActor-idleMotion, #fileActor-moveMotion,
-    #fileActor-speed, #fileActor-size, #fileActor-weight`).on('input', this.paramInput)
+  $(`#fileActor-portrait, #fileActor-clip, #fileActor-animationId,
+    #fileActor-idleMotion, #fileActor-moveMotion, #fileActor-speed,
+    #fileActor-size, #fileActor-weight`).on('input', this.paramInput)
   $(`#fileActor-sprites, #fileActor-attributes, #fileActor-skills, #fileActor-equipments,
     #fileActor-events, #fileActor-scripts
   `).on('change', this.listChange)
@@ -1160,6 +1161,7 @@ FileActor.initialize = function () {
 FileActor.create = function () {
   return {
     portrait: '',
+    clip: [0, 0, 64, 64],
     animationId: '',
     idleMotion: '',
     moveMotion: '',
@@ -1184,6 +1186,7 @@ FileActor.open = function (actor, meta) {
     // 写入数据
     const write = getElementWriter('fileActor', actor)
     write('portrait')
+    write('clip')
     write('animationId')
     write('idleMotion')
     write('moveMotion')
@@ -1220,8 +1223,9 @@ FileActor.update = function (actor, key, value) {
   File.planToSave(this.meta)
   switch (key) {
     case 'portrait':
-      if (actor.portrait !== value) {
-        actor.portrait = value
+    case 'clip':
+      if (actor[key] !== value) {
+        actor[key] = value
         Browser.body.updateIcon(this.meta.file)
       }
       break
@@ -3700,14 +3704,6 @@ Inspector.sceneLight = SceneLight}
 
 // 初始化
 SceneAnimation.initialize = function () {
-  // 创建翻转选项
-  $('#sceneAnimation-mirror').loadItems([
-    {name: 'None', value: 'none'},
-    {name: 'Horizontal', value: 'horizontal'},
-    {name: 'Vertical', value: 'vertical'},
-    {name: 'Both', value: 'both'},
-  ])
-
   // 绑定条件列表
   $('#sceneAnimation-conditions').bind(new ConditionListInterface(this, Scene))
 
@@ -3724,7 +3720,7 @@ SceneAnimation.initialize = function () {
   $('#sceneAnimation-animationId').on('write', this.animationIdWrite)
   const elements = $(`#sceneAnimation-name,
     #sceneAnimation-animationId, #sceneAnimation-motion,
-    #sceneAnimation-mirror, #sceneAnimation-x, #sceneAnimation-y`)
+    #sceneAnimation-x, #sceneAnimation-y, #sceneAnimation-angle`)
   elements.on('input', this.paramInput)
   elements.on('focus', Inspector.inputFocus)
   elements.on('blur', Inspector.inputBlur(this, Scene))
@@ -3741,9 +3737,9 @@ SceneAnimation.create = function () {
     presetId: '',
     animationId: '',
     motion: '',
-    mirror: 'none',
     x: 0,
     y: 0,
+    angle: 0,
     conditions: [],
     events: [],
     scripts: [],
@@ -3760,9 +3756,9 @@ SceneAnimation.open = function (animation) {
     write('name')
     write('animationId')
     write('motion')
-    write('mirror')
     write('x')
     write('y')
+    write('angle')
     write('conditions')
     write('events')
     write('scripts')
@@ -3790,6 +3786,9 @@ SceneAnimation.write = function (options) {
   }
   if (options.y !== undefined) {
     $('#sceneAnimation-y').write(options.y)
+  }
+  if (options.angle !== undefined) {
+    $('#sceneAnimation-angle').write(options.angle)
   }
 }
 
@@ -3820,16 +3819,16 @@ SceneAnimation.update = function (animation, key, value) {
         }
       }
       break
-    case 'mirror':
-      if (animation.mirror !== value) {
-        animation.mirror = value
-        animation.player.mirror = value
-      }
-      break
     case 'x':
     case 'y':
       if (animation[key] !== value) {
         animation[key] = value
+      }
+      break
+    case 'angle':
+      if (animation.angle !== value) {
+        animation.angle = value
+        animation.player?.setAngle(Math.radians(value))
       }
       break
   }
@@ -7173,7 +7172,8 @@ ParticleLayer.initialize = function () {
   $('#particleLayer-color-tint-3-slider').synchronize($('#particleLayer-color-tint-3'))
 
   // 侦听事件
-  const elements = $(`#particleLayer-name, #particleLayer-area-type,
+  const elements = $(`#particleLayer-name,
+    #particleLayer-area-type, #particleLayer-area-x, #particleLayer-area-y,
     #particleLayer-area-width, #particleLayer-area-height, #particleLayer-area-radius,
     #particleLayer-maximum, #particleLayer-count,
     #particleLayer-delay, #particleLayer-interval, #particleLayer-lifetime,
@@ -7228,6 +7228,8 @@ ParticleLayer.create = function () {
     locked: false,
     area: {
       type: 'point',
+      x: 0,
+      y: 0,
     },
     maximum: 20,
     count: 0,
@@ -7284,6 +7286,8 @@ ParticleLayer.open = function (layer) {
     const {rgba, min, max, easingId, startMin, startMax, endMin, endMax, tint} = color
     write('name')
     write('area-type')
+    write('area-x', area.x ?? 0)
+    write('area-y', area.y ?? 0)
     write('area-width', area.width ?? 64)
     write('area-height', area.height ?? 64)
     write('area-radius', area.radius ?? 32)
@@ -7385,20 +7389,29 @@ ParticleLayer.update = function (layer, key, value) {
       const {area} = layer
       if (area.type !== value) {
         area.type = value
+        delete area.x
+        delete area.y
         delete area.width
         delete area.height
         delete area.radius
         const read = getElementReader('particleLayer-area')
         switch (value) {
           case 'point':
-          case 'edge':
+            area.x = read('x')
+            area.y = read('y')
             break
           case 'rectangle':
+            area.x = read('x')
+            area.y = read('y')
             area.width = read('width')
             area.height = read('height')
             break
           case 'circle':
+            area.x = read('x')
+            area.y = read('y')
             area.radius = read('radius')
+            break
+          case 'edge':
             break
         }
         layerInstance.updateElementMethods()
@@ -7406,6 +7419,8 @@ ParticleLayer.update = function (layer, key, value) {
       }
       break
     }
+    case 'area-x':
+    case 'area-y':
     case 'area-width':
     case 'area-height':
     case 'area-radius': {

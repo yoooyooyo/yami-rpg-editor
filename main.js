@@ -23,10 +23,6 @@ const createEditorMenu = function () {
   const template = [{
     label: 'Menu',
     submenu: [{
-      label: 'Reload',
-      accelerator: 'F5',
-      role: 'forceReload',
-    }, {
       label: 'FullScreen',
       accelerator: 'F11',
       role: 'toggleFullScreen',
@@ -45,9 +41,6 @@ const createEditorMenu = function () {
 // ******************************** 创建编辑器窗口 ********************************
 
 const createEditorWindow = function () {
-  // 获取路径
-  const dirname = Path.resolve(__dirname, '../../../')
-
   // 创建窗口
   const editor = new BrowserWindow({
     title: 'Yami RPG Editor',
@@ -68,7 +61,7 @@ const createEditorWindow = function () {
   editor.setMenuBarVisibility(false)
 
   // 加载文件
-  editor.loadFile(Path.resolve(dirname, 'index.html'))
+  editor.loadFile(Path.resolve(__dirname, 'index.html'))
 
   // 侦听窗口模式切换事件
   editor.on('maximize', event => editor.send('maximize'))
@@ -77,7 +70,7 @@ const createEditorWindow = function () {
   editor.on('leave-full-screen', event => editor.send('leave-full-screen'))
 
   // 加载配置文件并设置缩放系数
-  const path = Path.resolve(dirname, 'config.json')
+  const path = Path.resolve(__dirname, 'config.json')
   const promise = require('fs').promises.readFile(path)
   editor.once('ready-to-show', event => {
     // 窗口最大化

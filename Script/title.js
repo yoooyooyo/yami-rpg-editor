@@ -303,7 +303,8 @@ Title.dispatchThemechangeEvent = function IIFE() {
 // 播放游戏
 Title.playGame = async function () {
   const element = $('#title-play')
-  if (!element.hasClass('selected')) {
+  if (Editor.state === 'open' &&
+    !element.hasClass('selected')) {
     element.addClass('selected')
 
     // 暂时失去输入框焦点来触发改变事件
@@ -738,10 +739,11 @@ NewProject.check = function () {
 
 // 读取文件列表
 NewProject.readFileList = function IIFE() {
+  const dirname = Path.resolve(__dirname, 'Templates/project')
   const options = {withFileTypes: true}
   const read = (path, list) => {
     return FSP.readdir(
-      `Templates/project/${path}`,
+      `${dirname}/${path}`,
       options,
     ).then(
       async files => {
@@ -788,7 +790,7 @@ NewProject.copyFilesTo = function (dirPath) {
     let total = 0
     let count = 0
     let info = ''
-    const sPath = 'Templates/project/'
+    const sPath = Path.resolve(__dirname, 'Templates/project') + '/'
     const dPath = `${dirPath}/`
     const promises = []
     const length = list.length
@@ -1040,7 +1042,7 @@ Deployment.readShellList = function IIFE() {
     )
   }
   return function (rootDir) {
-    root = rootDir
+    root = Path.resolve(__dirname, rootDir) + '/'
     return read('', [])
   }
 }()
@@ -1051,11 +1053,11 @@ Deployment.readFileList = async function (platform) {
   // 读取外壳文件列表
   switch (platform) {
     case 'windows-electron':
-      fileList = await this.readShellList('Templates/electron-win/')
+      fileList = await this.readShellList('Templates/electron-win')
       break
     case 'windows-nwjs': {
       const {window} = Data.config
-      fileList = await this.readShellList('Templates/nwjs-win/')
+      fileList = await this.readShellList('Templates/nwjs-win')
       fileList.push({
         path: 'package.json',
         data: {
@@ -1926,7 +1928,7 @@ Menubar.createLanguageItems = function () {
     items.push({
       label: get('showInExplorer'),
       click: () => {
-        File.openPath(Path.resolve(__dirname, 'locales'))
+        File.openPath(Local.dirname)
       },
     })
   })

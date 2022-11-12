@@ -743,6 +743,7 @@ Attribute.typeWrite = function (event) {
     case 'boolean':
     case 'number':
     case 'string':
+    case 'object':
       style.visibility = 'hidden'
       break
   }
@@ -750,20 +751,9 @@ Attribute.typeWrite = function (event) {
 
 // 类型输入框 - 输入事件
 Attribute.typeInput = function (event) {
-  // const read = getElementReader('attribute-value')
   const item = Attribute.panel.attribute
   Attribute.saveHistory(item, 'type', item.type)
   item.type = event.value
-  // switch (type) {
-  //   case 'boolean':
-  //   case 'number':
-  //   case 'string':
-  //     item.value = read(type)
-  //     break
-  //   case 'object':
-  //     item.value = null
-  //     break
-  // }
   Attribute.list.updateIcon(item)
   Attribute.changed = true
 }
@@ -958,7 +948,8 @@ Attribute.list.createIcon = function IIFE() {
     boolean: 'icon-boolean',
     number: 'icon-number',
     string: 'icon-string',
-    enum: 'icon-object',
+    enum: 'icon-string',
+    object: 'icon-object',
   }
   return function (item) {
     const icon = document.createElement('node-icon')
@@ -1164,9 +1155,9 @@ class AttributeContext {
       const items = []
       const group = this.groupMap[groupKey]
       if (group) {
-        const attrTypes = [attrType]
-        if (attrType === 'string') {
-          attrTypes.push('enum')
+        const attrTypes = attrType.split('|')
+        if (attrTypes.includes('string')) {
+          attrTypes.append('enum')
         }
         const itemCache = this.itemCache
         for (const attr of group.itemList) {

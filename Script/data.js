@@ -200,6 +200,7 @@ Data.close = function () {
 Data.createEasingItems = function () {
   let items = this.easings.items
   if (items === undefined) {
+    // 把属性写入数组中不会被保存到文件
     items = this.easings.items = []
     const easings = this.easings
     const length = easings.length
@@ -678,6 +679,17 @@ Project.initialize = function () {
     {name: 'Disabled', value: false},
   ])
 
+  // 设置角色碰撞关联元素
+  $('#config-collision-actor-enabled').enableHiddenMode().relate([
+    {case: true, targets: [$('#config-collision-actor-ignoreTeamMember')]},
+  ])
+
+  // 创建忽略队友选项
+  $('#config-collision-actor-ignoreTeamMember').loadItems([
+    {name: 'Enabled', value: true},
+    {name: 'Disabled', value: false},
+  ])
+
   // 创建场景碰撞选项
   $('#config-collision-scene-enabled').loadItems([
     {name: 'Enabled', value: true},
@@ -686,7 +698,7 @@ Project.initialize = function () {
 
   // 设置场景碰撞关联元素
   $('#config-collision-scene-enabled').enableHiddenMode().relate([
-    {case: true, targets: [$('#config-collision-scene-size')]},
+    {case: true, targets: [$('#config-collision-scene-actorSize')]},
   ])
 
   // 绑定导入字体列表
@@ -704,7 +716,7 @@ Project.initialize = function () {
   ])
 
   // 创建队伍包裹模式选项
-  $('#config-actor-partyInventoryMode').loadItems([
+  $('#config-actor-partyInventory').loadItems([
     {name: 'Share the Player\'s Inventory', value: 'shared'},
     {name: 'Use Separate Inventorys', value: 'separate'},
   ])
@@ -738,14 +750,15 @@ Project.initialize = function () {
     #config-animationArea-expansionRight, #config-animationArea-expansionBottom,
     #config-lightArea-expansionTop, #config-lightArea-expansionLeft,
     #config-lightArea-expansionRight, #config-lightArea-expansionBottom,
-    #config-collision-actor-enabled, #config-collision-scene-enabled, #config-collision-scene-size,
+    #config-collision-actor-enabled, #config-collision-actor-ignoreTeamMember,
+    #config-collision-scene-enabled, #config-collision-scene-actorSize,
     #config-font-default, #config-font-pixelated, #config-font-threshold,
     #config-event-startup, #config-event-loadGame, #config-event-initScene,
     #config-event-showText, #config-event-showChoices,
     #config-actor-playerTeam, #config-actor-playerActor,
     #config-actor-partyMembers-0, #config-actor-partyMembers-1,
     #config-actor-partyMembers-2, #config-actor-partyMembers-3,
-    #config-actor-partyInventoryMode,
+    #config-actor-partyInventory,
     #config-animation-frameRate, #config-script-language, #config-script-outDir`
   ).on('input', this.paramInput)
 }
@@ -784,8 +797,9 @@ Project.open = function () {
   write('lightArea-expansionRight')
   write('lightArea-expansionBottom')
   write('collision-actor-enabled')
+  write('collision-actor-ignoreTeamMember')
   write('collision-scene-enabled')
-  write('collision-scene-size')
+  write('collision-scene-actorSize')
   write('font-imports')
   write('font-default')
   write('font-pixelated')
@@ -801,7 +815,7 @@ Project.open = function () {
   write('actor-partyMembers-1')
   write('actor-partyMembers-2')
   write('actor-partyMembers-3')
-  write('actor-partyInventoryMode')
+  write('actor-partyInventory')
   write('actor-tempAttributes')
   write('animation-frameRate')
   write('script-language')
@@ -1588,7 +1602,7 @@ Easing.selectPointByCoords = function (mouseX, mouseY) {
 Easing.createPointImage = function () {
   if (!this.pointImage) {
     File.get({
-      local: 'images/curve_mark.png',
+      local: 'Images/curve_mark.png',
       type: 'image',
     }).then(image => {
       this.pointImage = image
@@ -2046,7 +2060,7 @@ Easing.confirm = function (event) {
     this.clear()
     // 删除数据绑定的元素对象
     const easings = this.data
-    NodeList.deleteCaches(easings)
+    TreeList.deleteCaches(easings)
     Data.easings = easings
     Data.createGUIDMap(easings)
     File.planToSave(Data.manifest.project.easings)
@@ -2287,7 +2301,7 @@ Team.list.restoreSelection = null
 Team.list.updateNodeElement = Easing.list.updateNodeElement
 Team.list.createIcon = null
 Team.list.updateIcon = null
-Team.list.updateItemName = Easing.list.updateItemName
+Team.list.updateItemName = null
 Team.list.addElementClass = Easing.list.addElementClass
 Team.list.updateTextNode = Easing.list.updateTextNode
 Team.list.createMark = null
@@ -2701,6 +2715,11 @@ Team.list.updateIcon = function (item) {
     const a = parseInt(color.slice(6, 8), 16) / 255
     icon.style.backgroundColor = `rgba(${r}, ${g}, ${b}, ${a})`
   }
+}
+
+// 列表 - 重写更新项目名称方法
+Team.list.updateItemName = function (item) {
+  this.updateTextNode(item)
 }
 
 // 列表 - 创建标记

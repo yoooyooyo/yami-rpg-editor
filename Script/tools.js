@@ -15,6 +15,7 @@ const Window = {
   open: null,
   close: null,
   closeAll: null,
+  isWindowOpen: null,
   setPositionMode: null,
   saveActiveElement: null,
   restoreActiveElement: null,
@@ -124,6 +125,14 @@ Window.closeAll = function () {
     this.close(frame.id)
     frame.closeEventEnabled = enabled
   }
+}
+
+// 判断窗口是否已打开
+Window.isWindowOpen = function (id) {
+  for (const frame of this.frames) {
+    if (frame.id === id) return true
+  }
+  return false
 }
 
 // 设置位置模式
@@ -316,6 +325,7 @@ Window.ambient.update = function () {
 const Local = {
   // properties
   active: null,
+  dirname: '',
   language: null,
   languages: null,
   properties: {},
@@ -332,6 +342,8 @@ const Local = {
 
 // 初始化
 Local.initialize = function () {
+  // 获取语言包目录
+  this.dirname = Path.resolve(__dirname, 'Locales')
   // 读取语言包后显示菜单栏
   this.readLanguageList().then(() => {
     return this.setLanguage(Editor.config.language)
@@ -343,8 +355,7 @@ Local.initialize = function () {
 // 读取语言列表
 Local.readLanguageList = function () {
   const languages = this.languages = []
-  const dir = Path.resolve(__dirname, 'locales')
-  return FSP.readdir(dir, {withFileTypes: true}).then(files => {
+  return FSP.readdir(this.dirname, {withFileTypes: true}).then(files => {
     const regexp = /\.(.+)$/
     for (const file of files) {
       if (file.isDirectory()) {
@@ -405,7 +416,7 @@ Local.setLanguage = async function (language) {
     if (key !== language) continue
     if (this.active !== filename) {
       try {
-        const path = `Locales/${filename}`
+        const path = Path.resolve(this.dirname, filename)
         this.update(await File.get({local: path, type: 'json'}))
         this.active = filename
         this.language = language
@@ -2352,7 +2363,7 @@ class AttributeListInterface {
     const stringValue  = type === 'string'  ? item.value : ''
     const enumValue    = type === 'enum'    ? item.value : ''
     const keyBox = $('#object-attribute-key')
-    keyBox.loadItems(Attribute.getAttributeItems(this.group))
+    keyBox.loadItems(Attribute.getAttributeItems(this.group, 'boolean|number|string'))
     const invalid = !Attribute.getGroupAttribute(this.group, key)
     if (invalid) AttributeListInterface.typeBox.write(type)
     const write = getElementWriter('object-attribute')
@@ -2540,7 +2551,7 @@ class ConditionListInterface {
     if (item?.conditions === list.read()) {
       const element = item.element
       const list = element?.parentNode
-      if (list instanceof NodeList) {
+      if (list instanceof TreeList) {
         list.updateConditionIcon(item)
       }
     }
@@ -2699,7 +2710,7 @@ class ConditionListInterface {
         case 'number':
         case 'string':
           // 设置全局变量类型过滤器
-          $('#condition-key').setAttribute('filter', type)
+          $('#condition-key').filter = type
           break
       }
     })
@@ -2764,10 +2775,6 @@ class EventListInterface {
       const eventClass = Command.invalid ? 'invalid' : ''
       return {content: eventType, class: eventClass}
     }
-    // 暂时
-    if (type === 'common') {
-      return {content: 'Common', class: 'invalid'}
-    }
     return Local.get('eventTypes.' + type)
   }
 
@@ -2794,7 +2801,7 @@ class EventListInterface {
     if (item?.events === list.read()) {
       const element = item.element
       const list = element?.parentNode
-      if (list instanceof NodeList) {
+      if (list instanceof TreeList) {
         list.updateEventIcon(item)
       }
     }
@@ -2880,7 +2887,7 @@ class ScriptListInterface {
     if (item?.scripts === list.read()) {
       const element = item.element
       const list = element?.parentNode
-      if (list instanceof NodeList) {
+      if (list instanceof TreeList) {
         list.updateScriptIcon(item)
       }
     }
@@ -2915,7 +2922,7 @@ class ScriptListInterface {
     const pointerup = event => {
       if (element.contains(event.target)) {
         const el = element.parentNode
-        // 临时兼容ParamList和NodeList
+        // 临时兼容ParamList和TreeList
         // 应该统一这个属性的命名
         const item = el.dataItem ?? el.item
         const path = File.getPath(item.id)

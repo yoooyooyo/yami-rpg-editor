@@ -4386,9 +4386,17 @@ class CustomBox extends HTMLElement {
     return this.getAttribute('type')
   }
 
+  set type(value) {
+    this.setAttribute('type', value)
+  }
+
   // 获取过滤属性
   get filter() {
     return this.getAttribute('filter')
+  }
+
+  set filter(value) {
+    this.setAttribute('filter', value)
   }
 
   // 读取数据
@@ -4735,8 +4743,8 @@ class NumberVar extends HTMLElement {
     this.mode = null
     this.numBox = new NumberBox(this)
     this.varBox = new CustomBox()
-    this.varBox.setAttribute('type', 'variable')
-    this.varBox.setAttribute('filter', 'number')
+    this.varBox.type = 'variable'
+    this.varBox.filter = 'number'
 
     // 侦听事件
     this.on('keydown', this.keydown)
@@ -4879,8 +4887,8 @@ class StringVar extends HTMLElement {
     this.mode = null
     this.strBox = new TextBox()
     this.varBox = new CustomBox()
-    this.varBox.setAttribute('type', 'variable')
-    this.varBox.setAttribute('filter', 'string')
+    this.varBox.type = 'variable'
+    this.varBox.filter = 'string'
 
     // 侦听事件
     this.on('keydown', this.keydown)
@@ -5023,8 +5031,8 @@ class SelectVar extends HTMLElement {
     this.mode = null
     this.selectBox = new SelectBox()
     this.varBox = new CustomBox()
-    this.varBox.setAttribute('type', 'variable')
-    this.varBox.setAttribute('filter', 'all')
+    this.varBox.type = 'variable'
+    this.varBox.filter = 'all'
 
     // 侦听事件
     this.on('keydown', this.keydown)
@@ -5171,10 +5179,10 @@ class FileVar extends HTMLElement {
     this.mode = null
     this.fileBox = new CustomBox()
     this.varBox = new CustomBox()
-    this.fileBox.setAttribute('type', 'file')
-    this.fileBox.setAttribute('filter', this.getAttribute('filter'))
-    this.varBox.setAttribute('type', 'variable')
-    this.varBox.setAttribute('filter', 'string')
+    this.fileBox.type = 'file'
+    this.fileBox.filter = this.getAttribute('filter')
+    this.varBox.type = 'variable'
+    this.varBox.filter = 'string'
 
     // 侦听事件
     this.on('keydown', this.keydown)
@@ -5971,9 +5979,9 @@ class NavBar extends HTMLElement {
 
 customElements.define('nav-bar', NavBar)
 
-// ******************************** 节点列表 ********************************
+// ******************************** 树状列表 ********************************
 
-class NodeList extends HTMLElement {
+class TreeList extends HTMLElement {
   display               //:string
   keyword               //:string
   searchResults         //:array
@@ -6081,7 +6089,7 @@ class NodeList extends HTMLElement {
   initialize() {
     const {data} = this
     if (!data.initialized) {
-      NodeList.createParents(this.data, this.root)
+      TreeList.createParents(this.data, this.root)
       Object.defineProperty(data, 'initialized', {
         configurable: true,
         value: true,
@@ -6467,7 +6475,7 @@ class NodeList extends HTMLElement {
 
       // 创建父对象引用属性
       if (sItem.parent === undefined) {
-        NodeList.createParents([sItem], null)
+        TreeList.createParents([sItem], null)
       }
 
       // 展开所在目录
@@ -6777,7 +6785,7 @@ class NodeList extends HTMLElement {
     }
     if (selections.length !== 0) {
       // 提高blur事件的触发优先级
-      NodeList.textBox.input.blur()
+      TreeList.textBox.input.blur()
       for (const item of selections) {
         const {element} = item
         if (element !== undefined) {
@@ -6975,7 +6983,7 @@ class NodeList extends HTMLElement {
   rename(item) {
     if (this.renamable) {
       const {element} = item
-      const {textBox} = NodeList
+      const {textBox} = TreeList
       if (document.activeElement === this &&
         !textBox.parentNode &&
         element.parentNode) {
@@ -7014,7 +7022,7 @@ class NodeList extends HTMLElement {
 
   // 插入填充元素并且清除其他元素
   insertPaddingAndClear() {
-    const padding = NodeList.padding
+    const padding = TreeList.padding
     let count = this.elements.count
     if (this.padded) count++
     if (padding.count !== count) {
@@ -7245,7 +7253,7 @@ class NodeList extends HTMLElement {
       !this.dragging &&
       this.display === 'normal' &&
       this.read() !== null &&
-      !NodeList.textBox.parentNode && (
+      !TreeList.textBox.parentNode && (
         this.lockDirectory === false ||
         this.read().class !== 'folder'
       )) {
@@ -7549,7 +7557,7 @@ class NodeList extends HTMLElement {
   }()
 }
 
-customElements.define('node-list', NodeList)
+customElements.define('node-list', TreeList)
 
 // ******************************** 拖放提示 ********************************
 
@@ -10874,7 +10882,7 @@ class ParameterPane extends HTMLElement {
         this.update()
       }
     }
-    if (scriptList instanceof NodeList) {
+    if (scriptList instanceof TreeList) {
       this.getData = () => {
         const item = scriptList.read()
         return item ? [item] : []
@@ -11029,15 +11037,15 @@ class ParameterPane extends HTMLElement {
       }
       case 'variable': {
         const wrap = this.createCustomBox()
-        wrap.input.setAttribute('type', 'global-variable')
-        wrap.input.setAttribute('filter', '')
+        wrap.input.type = 'global-variable'
+        wrap.input.filter = ''
         return wrap
       }
       case 'attribute':
       case 'attribute-key':
         if (parameter.filter === 'any') {
           const wrap = this.createCustomBox()
-          wrap.input.setAttribute('type', 'attribute')
+          wrap.input.type = 'attribute'
           return wrap
         } else {
           const wrap = this.createSelectBox()
@@ -11046,14 +11054,14 @@ class ParameterPane extends HTMLElement {
         }
       case 'attribute-group': {
         const wrap = this.createCustomBox()
-        wrap.input.setAttribute('type', 'attribute-group')
+        wrap.input.type = 'attribute-group'
         return wrap
       }
       case 'enum':
       case 'enum-value':
         if (parameter.filter === 'any') {
           const wrap = this.createCustomBox()
-          wrap.input.setAttribute('type', 'enum-string')
+          wrap.input.type = 'enum-string'
           return wrap
         } else {
           const wrap = this.createSelectBox()
@@ -11062,7 +11070,7 @@ class ParameterPane extends HTMLElement {
         }
       case 'enum-group': {
         const wrap = this.createCustomBox()
-        wrap.input.setAttribute('type', 'enum-group')
+        wrap.input.type = 'enum-group'
         return wrap
       }
       case 'actor':
@@ -11073,28 +11081,28 @@ class ParameterPane extends HTMLElement {
       case 'parallax':
       case 'tilemap': {
         const wrap = this.createCustomBox()
-        wrap.input.setAttribute('type', 'preset-object')
-        wrap.input.setAttribute('filter', type)
+        wrap.input.type = 'preset-object'
+        wrap.input.filter = type
         return wrap
       }
       case 'element':
       case 'element-id': {
         const wrap = this.createCustomBox()
-        wrap.input.setAttribute('type', 'preset-element')
-        wrap.input.setAttribute('filter', '')
+        wrap.input.type = 'preset-element'
+        wrap.input.filter = ''
         return wrap
       }
       case 'file': {
         const wrap = this.createCustomBox()
-        wrap.input.setAttribute('type', 'file')
-        wrap.input.setAttribute('filter', parameter.filter)
+        wrap.input.type = 'file'
+        wrap.input.filter = parameter.filter
         return wrap
       }
       case 'number[]':
       case 'string[]': {
         const wrap = this.createCustomBox()
-        wrap.input.setAttribute('type', 'array')
-        wrap.input.setAttribute('filter', type.slice(0, -2))
+        wrap.input.type = 'array'
+        wrap.input.filter = type.slice(0, -2)
         return wrap
       }
       case 'keycode':
@@ -13607,20 +13615,13 @@ class FileBodyPane extends HTMLElement {
           icon.addClass('icon-file-actor')
           break
         }
-        const guidMap = Data.manifest.guidMap
-        const meta = guidMap[data.portrait]
-        if (!meta) {
-          break
-        }
+        const meta = Data.manifest.guidMap[data.portrait]
+        const [cx, cy, cw, ch] = data.clip
+        if (!meta || cw * ch === 0) break
         const version = meta.mtimeMs
         const path = `${File.getPath(data.portrait)}?ver=${version}`
-        icon.style.backgroundImage = CSS.encodeURL(File.route(path))
         icon.isImageChanged = () => version !== meta.mtimeMs
-        File.getImageResolution(path).then(({width, height}) => {
-          if (width <= 128 && height <= 128) {
-            icon.style.imageRendering = 'pixelated'
-          }
-        })
+        this.setIconClip(icon, path, cx, cy, cw, ch)
         break
       }
       case 'skill':

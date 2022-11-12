@@ -1941,7 +1941,7 @@ const AutoTile = {
 
 // list methods
 AutoTile.templateList.updateNodeElement = Easing.list.updateNodeElement
-AutoTile.templateList.updateItemName = Easing.list.updateItemName
+AutoTile.templateList.updateItemName = Team.list.updateItemName
 AutoTile.templateList.addElementClass = Easing.list.addElementClass
 AutoTile.templateList.updateTextNode = Easing.list.updateTextNode
 
@@ -2846,7 +2846,7 @@ AutoTile.confirm = function (event) {
     this.changed = false
     // 删除数据绑定的元素对象
     const templates = this.templates
-    NodeList.deleteCaches(templates)
+    TreeList.deleteCaches(templates)
     Data.autotiles = templates
     Data.createGUIDMap(templates)
     File.planToSave(Data.manifest.project.autotiles)
@@ -3014,7 +3014,7 @@ TileFrame.open = function () {
   contentWidth = Math.clamp(contentWidth, MIN_CONTENT_WIDTH, MAX_CONTENT_WIDTH)
   contentHeight = Math.clamp(contentHeight, MIN_CONTENT_HEIGHT, MAX_CONTENT_HEIGHT)
   windowFrame.style.width = `${contentWidth}px`
-  windowFrame.style.height = `${contentHeight + 24}px`
+  windowFrame.style.height = `${contentHeight + 28}px`
   window.on('keydown', this.keydown)
   Window.open('autoTile-frameIndex')
 
@@ -3374,7 +3374,7 @@ TileNode.open = function (nodes, image, offsetX, offsetY) {
   contentWidth = Math.clamp(contentWidth, MIN_CONTENT_WIDTH, MAX_CONTENT_WIDTH)
   contentHeight = Math.clamp(contentHeight, MIN_CONTENT_HEIGHT, MAX_CONTENT_HEIGHT)
   windowFrame.style.width = `${contentWidth}px`
-  windowFrame.style.height = `${contentHeight + 24}px`
+  windowFrame.style.height = `${contentHeight + 28}px`
   window.on('keydown', this.keydown)
   Window.open('autoTile-selectNode')
 
