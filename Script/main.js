@@ -113,7 +113,6 @@ Editor.open = async function (path) {
       throw new Error('Invalid project path')
     }
   } catch (error) {
-    Log.throw(error)
     Layout.manager.switch('home')
     return
   }
@@ -415,6 +414,5 @@ Editor.saveManifest = function () {
 // ******************************** 主函数 ********************************
 
 !function main () {
-  // 初始化并打开最近的项目
   Editor.initialize()
 }()
