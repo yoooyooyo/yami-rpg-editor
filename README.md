@@ -1,12 +1,12 @@
 Yami rpg editor is 2D rpg editor on user-friendliness.
 
- - Official website: https://yami.io
- - Documentation:  https://yami.io/docs
-
 ## Build 
 ```shell
 npm install
 ```
+
+Extract "Runtime/electron-packages.zip" to "Project" as dependencies for game deployment.
+Since some files exceed 100MB, they have been split into multiple volumes.
 
 ## Run 
 ```shell
