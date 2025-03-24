@@ -16,8 +16,8 @@ npm run start
 ## Packing 
 ```shell
 # windows
-npm run pack-win
+npm run pack-win-x64
 
 # macos
-npm run pack-macos
+npm run pack-mac-universal
 ```
