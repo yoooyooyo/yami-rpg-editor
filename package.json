@@ -8,11 +8,12 @@
 	"scripts": {
 		"start": "electron . --dirname=Project",
 		"setup": "npm install",
-		"build:win": "node scripts/build.js win",
-		"build:mac": "node scripts/build.js mac",
-		"build:linux": "node scripts/build.js linux",
-		"build:macArm": "node scripts/build.js macArm64",
-		"build:universal": "node scripts/build.js universal"
+		"build": "node scripts/build.js",
+		"build:win": "electron-builder --dir --win --x64",
+		"build:mac": "electron-builder --dir --mac --x64",
+		"build:linux": "electron-builder --dir --linux --x64",
+		"build:macArm": "electron-builder --dir --mac --arm64",
+		"build:universal": "electron-builder --dir --mac --universal"
 	},
 	"devDependencies": {
 		"@types/node": "^22.13.10",
