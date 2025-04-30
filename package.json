@@ -8,15 +8,15 @@
 	"scripts": {
 		"start": "electron . --dirname=Project",
 		"setup": "npm install",
-		"build:win": "electron-builder --dir --win --x64",
-		"build:mac": "electron-builder --dir --mac --x64 --no-symlink",
-		"build:linux": "electron-builder --dir --linux --x64",
-		"build:macArm": "electron-builder --dir --mac --arm64 --no-symlink",
-		"build:universal": "electron-builder --dir --mac --universal",
-		"clean:build": "rm -rf build/"
+		"build:win": "node scripts/build.js win",
+		"build:mac": "node scripts/build.js mac",
+		"build:linux": "node scripts/build.js linux",
+		"build:macArm": "node scripts/build.js macArm64",
+		"build:universal": "node scripts/build.js universal"
 	},
 	"devDependencies": {
 		"@types/node": "^22.13.10",
+		"archiver": "^7.0.1",
 		"electron": "^20.3.12",
 		"electron-builder": "^25.1.8"
 	},
@@ -29,7 +29,7 @@
 		"url": "https://github.com/yami-pro/yami-rpg-editor.git"
 	},
 	"build": {
-		"appId": "com.yami.rpgeditor",
+		"appId": "com.open.yami.rpgeditor",
 		"electronVersion": "20.3.12",
 		"directories": {
 			"buildResources": "Assets",
@@ -54,14 +54,6 @@
 			{
 				"from": "node_modules/typescript/lib",
 				"to": "app/node_modules/typescript/lib"
-			},
-			{
-				"from": "Project/Templates/electron-win-x64/resources/app/node_modules",
-				"to": "app/Templates/electron-win-x64/resources/app/node_modules"
-			},
-			{
-				"from": "Project/Templates/electron-mac-universal.app/Contents/resources/app/node_modules",
-				"to": "app/Templates/electron-mac-universal.app/Contents/resources/app/node_modules"
 			}
 		],
 		"asar": true,
@@ -73,18 +65,18 @@
 		"nsis": {
 			"oneClick": true,
 			"shortcutName": "yami",
-			"installerIcon": "./icon.ico",
-			"uninstallerIcon": "./icon.ico",
-			"uninstallDisplayName": "uninstall",
+			"installerIcon": "icon.ico",
+			"uninstallerIcon": "icon.ico",
 			"allowToChangeInstallationDirectory": true,
 			"allowElevation": true,
+			"perMachine": true,
 			"createDesktopShortcut": true
 		},
 		"win": {
 			"icon": "icon.ico",
 			"executableName": "yami",
+			"verifyUpdateCodeSignature": false,
 			"target": [
-				"nsis",
 				"zip"
 			]
 		},
