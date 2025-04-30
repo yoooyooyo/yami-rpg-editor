@@ -8,10 +8,10 @@
 	"scripts": {
 		"start": "electron . --dirname=Project",
 		"setup": "npm install",
-		"pack-win-x64": "electron-builder --dir --win --x64",
-		"pack-mac-x64": "electron-builder --dir --mac --x64",
-		"pack-mac-arm64": "electron-builder --dir --mac --arm64",
-		"pack-mac-universal": "electron-builder --dir --mac --universal"
+		"build:win": "electron-builder --dir --win --x64",
+		"build:mac": "electron-builder --dir --mac --x64",
+		"build:macArm": "electron-builder --dir --mac --arm64",
+		"build:universal": "electron-builder --dir --mac --universal"
 	},
 	"devDependencies": {
 		"@types/node": "^22.13.10",
