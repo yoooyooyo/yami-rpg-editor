@@ -51,16 +51,10 @@
 			"src/**/*",
 			"!**/node_modules/*/{CHANGELOG.md,README.md,test,*.ts}"
 		],
-		"extraResources": [
-			{
-				"from": "node_modules/typescript/lib",
-				"to": "app/node_modules/typescript/lib"
-			}
-		],
+		"extraResources": [],
 		"asar": true,
 		"asarUnpack": [
-			"Templates/**",
-			"**/node_modules/typescript/**"
+			"Templates/**"
 		],
 		"extraFiles": [],
 		"nsis": {
@@ -78,6 +72,7 @@
 			"executableName": "yami",
 			"verifyUpdateCodeSignature": false,
 			"target": [
+				"nsis",
 				"zip"
 			]
 		},
@@ -85,6 +80,7 @@
 			"icon": "icon.icns",
 			"x64ArchFiles": "*",
 			"target": [
+				"dmg",
 				"zip"
 			]
 		},
