@@ -64,11 +64,21 @@
 		"extraFiles": [],
 		"nsis": {
 			"oneClick": true,
-			"shortcutName": "yami"
+			"shortcutName": "yami",
+			"installerIcon": "./icon.ico",
+			"uninstallerIcon": "./icon.ico",
+			"uninstallDisplayName": "uninstall",
+			"allowToChangeInstallationDirectory": true,
+			"allowElevation": true,
+			"createDesktopShortcut": true
 		},
 		"win": {
 			"icon": "icon.ico",
-			"executableName": "yami"
+			"executableName": "yami",
+			"target": [
+				"nsis",
+				"zip"
+			]
 		},
 		"mac": {
 			"icon": "icon.icns",
