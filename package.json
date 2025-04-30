@@ -1,75 +1,78 @@
 {
-  "name": "yami-rpg-editor",
-  "version": "1.0.0",
-  "main": "main.js",
-  "productName": "Yami RPG Editor",
-  "author": "Yami",
-  "description": "2D Game Editor",
-  "scripts": {
-    "start": "electron . --dirname=Project",
-    "setup": "npm install",
-    "pack-win-x64": "electron-builder --dir --win --x64",
-    "pack-mac-x64": "electron-builder --dir --mac --x64",
-    "pack-mac-arm64": "electron-builder --dir --mac --arm64",
-    "pack-mac-universal": "electron-builder --dir --mac --universal"
-  },
-  "devDependencies": {
-    "@types/node": "^22.13.10",
-    "electron": "^20.3.12",
-    "electron-builder": "^25.1.8"
-  },
-  "dependencies": {
-    "steamworks.js": "^0.4.0",
-    "typescript": "^5.8.2"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/yami-pro/yami-rpg-editor.git"
-  },
-  "build": {
-    "appId": "com.yami.rpgeditor",
-    "electronVersion": "20.3.12",
-    "directories": {
-      "buildResources": "Assets",
-      "output": "../steamworks-sdk/tools/ContentBuilder/content"
-    },
-    "files": [
-      {
-        "from": "Project",
-        "to": ".",
-        "filter": ["**", "!config.json"]
-      },
-      "main.js",
-      "package.json"
-    ],
-    "extraResources": [
-      {
-        "from": "node_modules/typescript/lib",
-        "to": "app/node_modules/typescript/lib"
-      },
-      {
-        "from": "Project/Templates/electron-win-x64/resources/app/node_modules",
-        "to": "app/Templates/electron-win-x64/resources/app/node_modules"
-      },
-      {
-        "from": "Project/Templates/electron-mac-universal.app/Contents/resources/app/node_modules",
-        "to": "app/Templates/electron-mac-universal.app/Contents/resources/app/node_modules"
-      }
-    ],
-    "asar": false,
-    "asarUnpack": [],
-    "extraFiles": [],
-    "nsis": {
-      "oneClick": true,
-      "shortcutName": "yami"
-    },
-    "win": {
-      "icon": "icon.ico",
-      "executableName": "yami"
-    },
-    "mac": {
-      "icon": "icon.icns",
-      "x64ArchFiles": "*"
-    }
-  }
+	"name": "yami-rpg-editor",
+	"version": "1.0.0",
+	"main": "main.js",
+	"productName": "Yami RPG Editor",
+	"author": "Yami",
+	"description": "2D Game Editor",
+	"scripts": {
+		"start": "electron . --dirname=Project",
+		"setup": "npm install",
+		"pack-win-x64": "electron-builder --dir --win --x64",
+		"pack-mac-x64": "electron-builder --dir --mac --x64",
+		"pack-mac-arm64": "electron-builder --dir --mac --arm64",
+		"pack-mac-universal": "electron-builder --dir --mac --universal"
+	},
+	"devDependencies": {
+		"@types/node": "^22.13.10",
+		"electron": "^20.3.12",
+		"electron-builder": "^25.1.8"
+	},
+	"dependencies": {
+		"steamworks.js": "^0.4.0",
+		"typescript": "^5.8.2"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/yami-pro/yami-rpg-editor.git"
+	},
+	"build": {
+		"appId": "com.yami.rpgeditor",
+		"electronVersion": "20.3.12",
+		"directories": {
+			"buildResources": "Assets",
+			"output": "./build"
+		},
+		"files": [
+			{
+				"from": "Project",
+				"to": ".",
+				"filter": [
+					"**",
+					"!config.json"
+				]
+			},
+			"main.js",
+			"package.json"
+		],
+		"extraResources": [
+			{
+				"from": "node_modules/typescript/lib",
+				"to": "app/node_modules/typescript/lib"
+			},
+			{
+				"from": "Project/Templates/electron-win-x64/resources/app/node_modules",
+				"to": "app/Templates/electron-win-x64/resources/app/node_modules"
+			},
+			{
+				"from": "Project/Templates/electron-mac-universal.app/Contents/resources/app/node_modules",
+				"to": "app/Templates/electron-mac-universal.app/Contents/resources/app/node_modules"
+			}
+		],
+		"asar": false,
+		"asarUnpack": [],
+		"extraFiles": [],
+		"nsis": {
+			"oneClick": true,
+			"shortcutName": "yami"
+		},
+		"win": {
+			"icon": "icon.ico",
+			"executableName": "yami"
+		},
+		"mac": {
+			"icon": "icon.icns",
+			"x64ArchFiles": "*"
+		}
+	}
 }

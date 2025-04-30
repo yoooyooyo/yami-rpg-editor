@@ -6,3 +6,4 @@ Project/Templates/electron-mac-universal.app/
 package-lock.json
 .DS_Store
 extension
+build
