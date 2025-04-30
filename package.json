@@ -9,10 +9,11 @@
 		"start": "electron . --dirname=Project",
 		"setup": "npm install",
 		"build:win": "electron-builder --dir --win --x64",
-		"build:mac": "electron-builder --dir --mac --x64",
+		"build:mac": "electron-builder --dir --mac --x64 --no-symlink",
 		"build:linux": "electron-builder --dir --linux --x64",
-		"build:macArm": "electron-builder --dir --mac --arm64",
-		"build:universal": "electron-builder --dir --mac --universal"
+		"build:macArm": "electron-builder --dir --mac --arm64 --no-symlink",
+		"build:universal": "electron-builder --dir --mac --universal",
+		"clean:build": "rm -rf build/"
 	},
 	"devDependencies": {
 		"@types/node": "^22.13.10",
@@ -44,7 +45,10 @@
 				]
 			},
 			"main.js",
-			"package.json"
+			"package.json",
+			"dist/**/*",
+			"src/**/*",
+			"!**/node_modules/*/{CHANGELOG.md,README.md,test,*.ts}"
 		],
 		"extraResources": [
 			{
@@ -60,8 +64,11 @@
 				"to": "app/Templates/electron-mac-universal.app/Contents/resources/app/node_modules"
 			}
 		],
-		"asar": false,
-		"asarUnpack": [],
+		"asar": true,
+		"asarUnpack": [
+			"Templates/**",
+			"**/node_modules/typescript/**"
+		],
 		"extraFiles": [],
 		"nsis": {
 			"oneClick": true,
