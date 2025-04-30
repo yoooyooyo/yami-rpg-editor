@@ -49,4 +49,4 @@ npm run build:linux
 
 # LICENSE
 
-[you can see this](./)
+[you can see this](./LICENSE)
