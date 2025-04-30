@@ -3,7 +3,10 @@
 	"version": "1.0.0",
 	"main": "main.js",
 	"productName": "Yami RPG Editor",
-	"author": "Yami",
+	"author": {
+		"name": "Xuran",
+		"email": "1783558957@qq.com"
+	},
 	"description": "2D Game Editor",
 	"scripts": {
 		"start": "electron . --dirname=Project",
