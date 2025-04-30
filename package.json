@@ -10,6 +10,7 @@
 		"setup": "npm install",
 		"build:win": "electron-builder --dir --win --x64",
 		"build:mac": "electron-builder --dir --mac --x64",
+		"build:linux": "electron-builder --dir --linux --x64",
 		"build:macArm": "electron-builder --dir --mac --arm64",
 		"build:universal": "electron-builder --dir --mac --universal"
 	},
@@ -80,9 +81,39 @@
 				"zip"
 			]
 		},
+		"dmg": {
+			"icon": "./icon.icns",
+			"iconSize": 100,
+			"contents": [
+				{
+					"x": 380,
+					"y": 280,
+					"type": "link",
+					"path": "/Applications"
+				},
+				{
+					"x": 110,
+					"y": 280,
+					"type": "file"
+				}
+			],
+			"window": {
+				"width": 500,
+				"height": 500
+			}
+		},
 		"mac": {
 			"icon": "icon.icns",
-			"x64ArchFiles": "*"
+			"x64ArchFiles": "*",
+			"target": [
+				"zip"
+			]
+		},
+		"linux": {
+			"target": [
+				"AppImage",
+				"deb"
+			]
 		}
 	}
 }
