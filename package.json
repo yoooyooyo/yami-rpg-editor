@@ -50,7 +50,20 @@
 			"src/**/*",
 			"!**/node_modules/*/{CHANGELOG.md,README.md,test,*.ts}"
 		],
-		"extraResources": [],
+		"extraResources": [
+			{
+				"from": "node_modules/typescript/lib",
+				"to": "app/node_modules/typescript/lib"
+			},
+			{
+				"from": "Project/Templates/electron-win-x64/resources/app/node_modules",
+				"to": "app/Templates/electron-win-x64/resources/app/node_modules"
+			},
+			{
+				"from": "Project/Templates/electron-mac-universal.app/Contents/resources/app/node_modules",
+				"to": "app/Templates/electron-mac-universal.app/Contents/resources/app/node_modules"
+			}
+		],
 		"asar": true,
 		"asarUnpack": [
 			"Templates/**"
