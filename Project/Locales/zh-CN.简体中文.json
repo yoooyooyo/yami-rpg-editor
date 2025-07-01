@@ -1670,6 +1670,7 @@
   },
   "components": {
     "[comment]": "********** 通用 **********",
+    "[update-qr-code]": {"content": "切换其他IP", "tip": ""},
     "[confirm]": {"content": "确定", "tip": ""},
     "[cancel]": {"content": "取消", "tip": ""},
     "[apply]": {"content": "应用"},

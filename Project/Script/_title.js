@@ -2179,12 +2179,21 @@ Menubar.popupOpenYamiMenu = function (target) {
             if (!osversion) osversion = "unknown";
             Window.open("qr-code");
             const ips = await WebServer.getIp();
-            const url = `http://${ips[0]}:${WebServer.port}`;
-            $("#qr-text").textContent = `IP：${url}`;
+            let index = 0;
+            let url = `http://${ips[index]}:${WebServer.port}`;
             $("#qr-text1").textContent = `扫描二维码打开网页`;
             $("#qr-ps").textContent = `PS：注意需在同一局域网下扫描二维码`;
             $("#qr-ps").style.color = `red`;
+            $("#qr-ps1").textContent = `如果内容没刷新，请Ctrl+S保存场景`;
+            $("#qr-ps1").style.color = `red`;
             $("#qr-code-img").src = await WebServer.toDataUrl(url);
+            $("#qr-text").textContent = `IP：${url}`;
+            $("#qr-update-button").on("click", async () => {
+              index = index >= ips.length - 1 ? 0 : ++index;
+              url = `http://${ips[index]}:${WebServer.port}`;
+              $("#qr-code-img").src = await WebServer.toDataUrl(url);
+              $("#qr-text").textContent = `IP：${url}`;
+            });
           },
         },
       ]

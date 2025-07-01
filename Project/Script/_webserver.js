@@ -1,5 +1,5 @@
 const WebServer = {
-  port: 3000,
+  port: 5959,
   start(path) {
     require("electron").ipcRenderer.invoke("start-server", {
       port: this.port,

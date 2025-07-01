@@ -1670,6 +1670,7 @@
   },
   "components": {
     "[comment]": "********** Common **********",
+    "[update-qr-code]": {"content": "Update QRCode", "tip": ""},
     "[confirm]": {"content": "Confirm", "tip": ""},
     "[cancel]": {"content": "Cancel", "tip": ""},
     "[apply]": {"content": "Apply"},
