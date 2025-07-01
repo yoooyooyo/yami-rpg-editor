@@ -21,6 +21,9 @@
 		"electron-builder": "^25.1.8"
 	},
 	"dependencies": {
+		"koa": "^3.0.0",
+		"mime-types": "^3.0.1",
+		"qrcode": "^1.5.4",
 		"steamworks.js": "^0.4.0",
 		"typescript": "^5.8.2"
 	},
@@ -45,10 +48,7 @@
 				]
 			},
 			"main.js",
-			"package.json",
-			"dist/**/*",
-			"src/**/*",
-			"!**/node_modules/*/{CHANGELOG.md,README.md,test,*.ts}"
+			"package.json"
 		],
 		"extraResources": [
 			{
@@ -65,9 +65,7 @@
 			}
 		],
 		"asar": true,
-		"asarUnpack": [
-			"Templates/**"
-		],
+		"asarUnpack": [],
 		"extraFiles": [],
 		"nsis": {
 			"oneClick": true,

@@ -1,7 +1,9 @@
 // [YAMI RPG EDITOR]主线程
 
 // ******************************** 加载模块 ********************************
-
+const Koa = require("koa");
+const Mime = require("mime-types");
+const QRCode = require("qrcode");
 const {
   app,
   Menu,
@@ -13,6 +15,7 @@ const {
 const fs = require("fs");
 const { fork } = require("child_process");
 const path = require("path");
+const os = require("os");
 
 // 如果启动时包含dirname参数
 // 表示应用运行在node.js调试模式中
@@ -27,6 +30,66 @@ for (const arg of process.argv) {
     break;
   }
 }
+
+function getLocalIpAddress() {
+  const interfaces = os.networkInterfaces();
+  const results = new Set();
+
+  for (const name of Object.keys(interfaces)) {
+    for (const iface of interfaces[name]) {
+      if (iface.family !== "IPv4" || iface.internal !== false) continue;
+
+      results.add(iface.address);
+    }
+  }
+
+  return Array.from(results);
+}
+
+// ******************************** 本地开发服务器 ********************************
+
+ipcMain.handle("start-server", (event, config) => {
+  const basePath = path.dirname(config.path);
+  const instanceServer = new Koa();
+  instanceServer.use(async (ctx) => {
+    try {
+      const filePath = path.join(basePath, ".preview", ctx.path);
+      const ext = path.extname(filePath);
+      const type = Mime.lookup(ext) || "text/plain";
+      if (ctx.path === "/") {
+        ctx.set("Content-Type", Mime.lookup("html"));
+        ctx.body = fs.readFileSync(path.join(filePath, "index.html"));
+      } else {
+        ctx.set("Content-Type", type);
+        ctx.body = fs.readFileSync(filePath);
+      }
+    } catch {
+      ctx.body = "404 Not Found";
+    }
+  });
+
+  const server = instanceServer.listen(config.port, () => {
+    console.log(`Start Server on http://localhost:${config.port}.`);
+  });
+  ipcMain.handle("stop-server", (event) => {
+    server.close();
+    console.log("Stop Server .");
+  });
+});
+
+ipcMain.handle("to-qrcode", (event, url) => {
+  return QRCode.toDataURL(url, { errorCorrectionLevel: "H" })
+    .then((url) => {
+      return url;
+    })
+    .catch((err) => {
+      console.error(err);
+    });
+});
+
+ipcMain.handle("get-local-ip", (event) => {
+  return getLocalIpAddress();
+});
 
 // ******************************** 文件系统 ********************************
 

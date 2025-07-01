@@ -34,6 +34,7 @@
   <script src="Script/_command.js" defer></script>
   <script src="Script/_log.js" defer></script>
   <script src="Script/_update.js" defer></script>
+  <script src="Script/_webserver.js" defer></script>
   <script src="Script/_main.js" defer></script>
   <script src='vs/loader.js' defer></script>
   <script src='vs/editor/editor.main.nls.js' defer></script>
@@ -2884,6 +2885,19 @@
     <title-bar>Reference<close></close></title-bar>
     <content-frame>
       <common-list id="reference-list"></common-list>
+    </content-frame>
+  </window-frame>
+
+  <!-- QR Code窗口 -->
+  <window-frame id="qr-code">
+    <title-bar>本地服务预览<close></close></title-bar>
+    <content-frame>
+      <grid-box>
+        <img id="qr-code-img"></img><br />
+        <div id="qr-text"></div><br />
+        <div id="qr-text1"></div><br />
+        <div id="qr-ps"></div>
+      </grid-box>
     </content-frame>
   </window-frame>
 

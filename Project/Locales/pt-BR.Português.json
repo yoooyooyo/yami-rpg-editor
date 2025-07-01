@@ -228,6 +228,9 @@
       "documentation": "Documentação",
       "about": "Sobre"
     },
+    "menuOpenYami": {
+      "qr": "QR Code"
+    },
     "menuTab": {
       "close": "Fechar",
       "closeOtherTabs": "Fechar outras abas",
@@ -1450,6 +1453,7 @@
     "menu-view": {"content": "Visualizar"},
     "menu-window": {"content": "Janela"},
     "menu-help": {"content": "Ajuda"},
+    "menu-open-yami": {"content": "Open Yami"},
 
     "[comment]": "********** Barra de navegação **********",
     "nav-project": {"content": "Projeto"},

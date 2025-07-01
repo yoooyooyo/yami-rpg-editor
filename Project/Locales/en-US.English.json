@@ -367,6 +367,9 @@
       "about": "About",
       "updateLog": "Update Log"
     },
+    "menuOpenYami": {
+      "qr": "QR Code"
+    },
     "menuTab": {
       "close": "Close",
       "closeOtherTabs": "Close Other Tabs",
@@ -1698,7 +1701,7 @@
     "menu-view": {"content": "View"},
     "menu-window": {"content": "Window"},
     "menu-help": {"content": "Help"},
-
+    "menu-open-yami": {"content": "Open Yami"},
     "[comment]": "********** Nav Bar **********",
     "nav-project": {"content": "Project"},
     "nav-scene": {"content": "Scene"},

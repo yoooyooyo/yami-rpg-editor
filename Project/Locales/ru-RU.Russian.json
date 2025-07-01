@@ -367,6 +367,9 @@
       "about": "О программе",
 	  "updateLog": "Журнал обновлений"
     },
+    "menuOpenYami": {
+      "qr": "QR Code"
+    },
     "menuTab": {
       "close": "Закрыть",
       "closeOtherTabs": "Закрыть другие вкладки",
@@ -1698,6 +1701,7 @@
     "menu-view": {"content": "Вид"},
     "menu-window": {"content": "Настройки"},
     "menu-help": {"content": "Помощь"},
+    "menu-open-yami": {"content": "Open Yami"},
 
     "[comment]": "********** Nav Bar **********",
     "nav-project": {"content": "Проект"},

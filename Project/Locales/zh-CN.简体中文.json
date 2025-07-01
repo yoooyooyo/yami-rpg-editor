@@ -367,6 +367,9 @@
       "about": "关于",
       "updateLog": "更新日志"
     },
+    "menuOpenYami": {
+      "qr": "QR Code"
+    },
     "menuTab": {
       "close": "关闭",
       "closeOtherTabs": "关闭其他标签页",
@@ -1698,6 +1701,7 @@
     "menu-view": {"content": "视图"},
     "menu-window": {"content": "窗口"},
     "menu-help": {"content": "帮助"},
+    "menu-open-yami": {"content": "Open Yami"},
 
     "[comment]": "********** 导航栏 **********",
     "nav-project": {"content": "项目"},
