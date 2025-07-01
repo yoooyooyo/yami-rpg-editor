@@ -71,8 +71,9 @@ ipcMain.handle("start-server", (event, config) => {
   const server = instanceServer.listen(config.port, () => {
     console.log(`Start Server on http://localhost:${config.port}.`);
   });
-  ipcMain.handle("stop-server", (event) => {
+  ipcMain.handleOnce("stop-server", (event) => {
     server.close();
+    instanceServer.emit("close");
     console.log("Stop Server .");
   });
 });
