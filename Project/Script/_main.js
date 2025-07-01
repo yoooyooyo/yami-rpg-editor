@@ -332,6 +332,7 @@ Editor.quit = function () {
   this.saveProject();
   this.saveManifest();
   require("electron").ipcRenderer.send("force-close-window");
+  WebServer.stop();
 };
 
 // 更新路径
