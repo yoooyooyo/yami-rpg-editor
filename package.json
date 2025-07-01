@@ -64,18 +64,12 @@
 				"to": "app/Templates/electron-mac-universal.app/Contents/resources/app/node_modules"
 			}
 		],
-		"asar": true,
+		"asar": false,
 		"asarUnpack": [],
 		"extraFiles": [],
 		"nsis": {
 			"oneClick": true,
-			"shortcutName": "yami",
-			"installerIcon": "icon.ico",
-			"uninstallerIcon": "icon.ico",
-			"allowToChangeInstallationDirectory": true,
-			"allowElevation": true,
-			"perMachine": true,
-			"createDesktopShortcut": true
+			"shortcutName": "yami"
 		},
 		"win": {
 			"icon": "icon.ico",
