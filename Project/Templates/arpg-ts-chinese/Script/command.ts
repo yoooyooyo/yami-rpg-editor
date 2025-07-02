@@ -3112,14 +3112,23 @@ let Command = new class CommandCompiler {
     }
   }()
 
-  /** 跳出循环 */
+  /** 跳出循环（支持嵌套遍历）*/
   protected break(): CommandFunction | null {
     const {stack} = this
     let i = stack.length
     while (--i >= 0) {
       if (stack[i].loop) {
+        // 找到最近的循环所在的上一层编译上下文
         const {commands, index} = stack[i - 1]
-        return Command.goto(commands, index + 1)
+        const jump = Command.goto(commands, index + 1)
+        // 生成运行时函数：先弹出 forEach 迭代器，再跳转
+        return () => {
+          const fe = CurrentEvent.forEach
+          if (fe && fe.length > 0) {
+            fe.shift() // 移除当前（最内层）迭代器上下文
+          }
+          return jump()
+        }
       }
     }
     return null
