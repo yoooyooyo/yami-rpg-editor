@@ -10370,7 +10370,7 @@ node-item.related-event {
  */
 #script {
   width: 720px;
-  height: 238px;
+  height: calc(238px * 1.5);
   /* 输入提示框可溢出 */
   overflow: visible;
 }
@@ -10380,7 +10380,7 @@ node-item.related-event {
   left: 10px;
   top: 10px;
   width: 700px;
-  height: 160px;
+  height: calc(238px * 1.15);
   /* 用于填补150%缩放时边框处的缝隙 */
   background-color: var(--input-background);
   border: var(--fieldset-border);

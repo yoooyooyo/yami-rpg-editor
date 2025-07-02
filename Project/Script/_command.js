@@ -12295,7 +12295,7 @@ Command.cases.script = {
   model: null,
   versionId: null,
   changed: false,
-  fontSize: 12,
+  fontSize: 14,
   lineHeight: 14,
   mark: $('#script-mark'),
   colorOptions: {
