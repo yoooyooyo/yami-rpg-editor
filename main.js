@@ -16,6 +16,7 @@ const fs = require("fs");
 const { fork } = require("child_process");
 const path = require("path");
 const os = require("os");
+const ts = require("typescript");
 
 // 如果启动时包含dirname参数
 // 表示应用运行在node.js调试模式中
@@ -303,6 +304,22 @@ const createEditorWindow = function () {
   // 停止TSC事件
   ipcMain.on("stop-tsc", (event) => {
     stopTSC();
+  });
+
+  // 编译TS代码
+  ipcMain.handle("tsc-file", (event, code) => {
+    let res;
+    let error;
+    try {
+      res = ts.transpileModule(code, {
+        target: ts.ScriptTarget.ES2022, // 编译目标版本
+        module: ts.ModuleKind.ESNext, // 模块系统
+        strict: true, // 启用严格模式
+      });
+    } catch (e) {
+      error = e;
+    }
+    return Promise.resolve({ res:res.outputText, error });
   });
 
   let tscProcess = null;

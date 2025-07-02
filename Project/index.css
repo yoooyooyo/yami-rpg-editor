@@ -10386,6 +10386,10 @@ node-item.related-event {
   border: var(--fieldset-border);
   border-radius: 2px;
 }
+#script-change{
+  margin-left: 20px;
+  margin-top: 5px;
+}
 
 #script-confirm {
   right: 108px;

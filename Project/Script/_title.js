@@ -2357,7 +2357,6 @@ Menubar.keydown = function (event) {
       case "KeyS":
         File.save();
         WebServer.update(Editor.config.project);
-        console.log("保存", WebServer);
         break;
       case "KeyT":
         if (event.shiftKey) {

@@ -1665,6 +1665,8 @@
       "yes": "是",
       "no": "否",
       "confirm": "确定",
+      "script-change-ts":"切换为TS",
+      "script-change-js":"切换为JS",
       "cancel": "取消"
     }
   },

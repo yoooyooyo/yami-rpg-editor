@@ -40,6 +40,7 @@
   <script src='vs/editor/editor.main.nls.js' defer></script>
   <script src='vs/editor/editor.main.js' defer></script>
   <script src='vs/editor/javascript.js' defer></script>
+  <script src='vs/editor/typescript.js' defer></script>
   <script src='vs/language/typescript/tsMode.js' defer></script>
 </head>
 
@@ -6011,6 +6012,7 @@
   <!-- 执行脚本 -->
   <window-frame id="script">
     <title-bar>Script<text id='script-mark' class='hidden'>✱</text>
+        <button id="script-change" name="script-change-ts">切换为TS</button>
       <close></close>
     </title-bar>
     <content-frame>

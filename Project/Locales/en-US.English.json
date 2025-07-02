@@ -1665,7 +1665,9 @@
       "yes": "Yes",
       "no": "No",
       "confirm": "Confirm",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "script-change-ts":"Switch to TS",
+      "script-change-js":"Switch to JS"
     }
   },
   "components": {
