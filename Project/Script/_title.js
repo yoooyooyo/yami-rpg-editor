@@ -2114,8 +2114,8 @@ Menubar.popupHelpMenu = function (target) {
           click: () => {
             File.openURL(
               Local.language.slice(0, 2) === "zh"
-                ? "https://yamirpg.com/zh/docs/intro"
-                : "https://yamirpg.com/docs/intro"
+                ? "https://open-yami-community.github.io/open-yami-doc/"
+                : "https://open-yami-community.github.io/open-yami-doc/" // 锁死中文
             );
           },
         },
