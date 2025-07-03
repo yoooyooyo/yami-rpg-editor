@@ -124,8 +124,8 @@ let UI = new class UIManager {
         // 替换引用元素
         if (node.class === 'reference') {
           const prefab = presets[node.prefabId]
-          // 剔除无效的引用元素(包括引用嵌套)
-          if (!prefab || prefab.class === 'reference') {
+          console.log(node,prefab)
+          if (node.hidden ||!node.enabled|| !prefab || prefab.class === 'reference' || prefab.hidden) {
             nodes.splice(i, 1)
             continue
           }
