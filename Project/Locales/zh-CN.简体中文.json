@@ -1676,6 +1676,8 @@
     "[confirm]": {"content": "确定", "tip": ""},
     "[cancel]": {"content": "取消", "tip": ""},
     "[apply]": {"content": "应用"},
+    "[to-excel]": {"content": "导出到Excel"},
+    "[from-excel]": {"content": "从Excel导入"},
     "[search]": {"placeholder": "查找"},
     "[zoom]": {"tip": "$缩放比例\n0: 25%\n1: 50%\n2: 100%\n3: 200%\n4: 400%"},
     "[zoom-0-6]": {"tip": "$缩放比例\n0: 25%\n1: 50%\n2: 100%\n3: 200%\n4: 400%\n5: 800%\n6: 1600%"},

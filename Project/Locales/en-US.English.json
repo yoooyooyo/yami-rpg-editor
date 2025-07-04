@@ -1676,6 +1676,8 @@
     "[confirm]": {"content": "Confirm", "tip": ""},
     "[cancel]": {"content": "Cancel", "tip": ""},
     "[apply]": {"content": "Apply"},
+    "[to-excel]": {"content": "Export to Excel"},
+    "[from-excel]": {"content": "Import from Excel"},
     "[search]": {"placeholder": "Search"},
     "[zoom]": {"tip": "$Scale\n0: 25%\n1: 50%\n2: 100%\n3: 200%\n4: 400%"},
     "[zoom-0-6]": {"tip": "$Scale\n0: 25%\n1: 50%\n2: 100%\n3: 200%\n4: 400%\n5: 800%\n6: 1600%"},

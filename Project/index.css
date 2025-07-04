@@ -11152,6 +11152,16 @@ node-icon.icon-note {
   width: 320px;
 }
 
+#localization-from-excel {
+  right: 406px;
+  bottom: 10px;
+}
+
+#localization-to-excel {
+  right: 306px;
+  bottom: 10px;
+}
+
 #localization-confirm {
   right: 206px;
   bottom: 10px;
