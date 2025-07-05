@@ -292,20 +292,6 @@ async function modifyManifest(config) {
     if (config.versionCode !== undefined) {
       result.manifest.$["android:versionCode"] = config.versionCode.toString();
     }
-
-    // 【新增】设置targetSdkVersion为30以满足Android R+要求
-    if (!result.manifest["uses-sdk"]) {
-      result.manifest["uses-sdk"] = [{ $: {} }];
-    }
-    const usesSdk = Array.isArray(result.manifest["uses-sdk"])
-      ? result.manifest["uses-sdk"][0]
-      : result.manifest["uses-sdk"];
-    usesSdk.$["android:targetSdkVersion"] = "30";
-    // 可选：确保minSdkVersion兼容性
-    if (!usesSdk.$["android:minSdkVersion"]) {
-      usesSdk.$["android:minSdkVersion"] = "21";
-    }
-
     // 确保application标签中只保留正确的icon引用和设置应用名称
     if (result.manifest.application) {
       const app = Array.isArray(result.manifest.application)
