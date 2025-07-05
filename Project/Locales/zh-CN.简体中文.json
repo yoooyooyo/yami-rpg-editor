@@ -368,7 +368,8 @@
       "updateLog": "更新日志"
     },
     "menuOpenYami": {
-      "qr": "QR Code"
+      "qr": "QR Code",
+      "export_apk": "构建APK"
     },
     "menuTab": {
       "close": "关闭",
@@ -1673,6 +1674,7 @@
   "components": {
     "[comment]": "********** 通用 **********",
     "[update-qr-code]": {"content": "切换其他IP", "tip": ""},
+    "[export-to-apk]": {"content": "构建APK", "tip": ""},
     "[confirm]": {"content": "确定", "tip": ""},
     "[cancel]": {"content": "取消", "tip": ""},
     "[apply]": {"content": "应用"},

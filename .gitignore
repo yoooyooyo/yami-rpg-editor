@@ -3,7 +3,9 @@ node_modules/
 Project/config.json
 Project/Templates/electron-win-x64/
 Project/Templates/electron-mac-universal.app/
+Project/Apk/decompiled/
 package-lock.json
 .DS_Store
 extension
 build
+

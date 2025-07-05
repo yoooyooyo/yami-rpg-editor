@@ -35,6 +35,7 @@
   <script src="Script/_log.js" defer></script>
   <script src="Script/_update.js" defer></script>
   <script src="Script/_webserver.js" defer></script>
+  <script src="Script/_apkbuilder.js" defer></script>
   <script src="Script/_main.js" defer></script>
   <script src='vs/loader.js' defer></script>
   <script src='vs/editor/editor.main.nls.js' defer></script>
@@ -2906,6 +2907,44 @@
     </content-frame>
   </window-frame>
 
+  <!-- export_apk 窗口 -->
+  <window-frame id="export-apk">
+    <title-bar>构建APK<close></close></title-bar>
+    <content-frame>
+      <box id="export-apk-out">
+        <grid-box id="export-apk-grid">
+          <text class="project-summary">应用配置</text>
+          <text>应用名称</text><text-box id="export-apk-apkName"></text-box>
+          <text>应用图标</text><text-box id="export-apk-apkIcon"></text-box>
+          <text>应用包名</text><text-box id="export-apk-apkPackageName"></text-box>
+          <text>应用版本</text><text-box id="export-apk-apkVersionName"></text-box>
+          <text>应用版本号</text><text-box id="export-apk-apkVersionCode"></text-box>
+          <text class="project-summary">反编译配置</text>
+          <text>反编译输出目录</text><text-box id="export-apk-outputDir"></text-box>
+          <text>新APK输出路径</text><text-box id="export-apk-newApkPath"></text-box>
+          <text>apktool.jar路径</text><text-box id="export-apk-apktoolPath"></text-box>
+          <text class="project-summary">签名配置</text>
+          <text>JKS密钥库路径</text><text-box id="export-apk-jksPath"></text-box>
+          <text>密钥库密码</text><text-box id="export-apk-keyStorePassword"></text-box>
+          <text>密钥别名</text><text-box id="export-apk-keyAlias"></text-box>
+          <text>密钥密码</text><text-box id="export-apk-keyPassword"></text-box>
+          <text>apksigner路径</text><text-box id="export-apk-apksignerPath"></text-box>
+          <text>签名后APK路径</text><text-box id="export-apk-signedApkPath"></text-box>
+        </grid-box>
+        <box id="export-apk-PS">
+          <text class="project-summary export-apk-major">PS（温馨提示）</text>
+          <text class="export-apk-major">构建前请确保您安装了Java，apktool、apksigner工具</text>
+          <text class="export-apk-major">@表示编辑器模板目录、$表示项目目录apk文件夹、~表示项目目录</text>
+        </box>
+        <box id="export-apk-container">
+          <box id="export-apk-content">
+          </box>
+        </box>
+      </box>
+      <button id="export-apk-button" name="export-to-apk"></button>
+    </content-frame>
+  </window-frame>
+
   <!-- 关于窗口 -->
   <window-frame id="about">
     <title-bar>Yami RPG Editor<close></close></title-bar>
@@ -2915,7 +2954,7 @@
           <text class="href">刀里个刀</text><br />
           <text class="href" href="https://store.steampowered.com/app/2346410/Border_Pioneer">Yahzj</text><br />
           <text class="href" href="https://github.com/chunqian">Chunqian</text><br />
-          <text class="href" href="https://space.bilibili.com/291565199">徐先生</text><br />
+          <text class="href" href="https://github.com/xiaoxustudio">徐先生</text><br />
           <text class="href">Alias</text><br />
           <text class="href" href="https://www.youtube.com/watch?v=3VcWWYIzKNY">Mr. Von Grimmsy</text><br />
           <text class="href" href="https://vk.com/sxdmedia">ZerosmO</text><br />
@@ -6014,7 +6053,7 @@
   <!-- 执行脚本 -->
   <window-frame id="script">
     <title-bar>Script<text id='script-mark' class='hidden'>✱</text>
-        <button id="script-change" name="script-change-ts">切换为TS</button>
+      <button id="script-change" name="script-change-ts">切换为TS</button>
       <close></close>
     </title-bar>
     <content-frame>

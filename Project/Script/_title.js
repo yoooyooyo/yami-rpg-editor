@@ -2196,6 +2196,130 @@ Menubar.popupOpenYamiMenu = function (target) {
             });
           },
         },
+        {
+          label: get("export_apk"),
+          enabled: open,
+          click: async () => {
+            Window.open("export-apk");
+            // 解析本地构建APK配置
+            const pConfig = Path.resolve(
+              Path.dirname(Editor.config.project),
+              "apk",
+              "./config.json"
+            );
+            let config = {
+              apkPath: "@/app-release.apk", // 原始APK路径
+              outputDir: "$/decompiled", // 反编译输出目录
+              newApkPath: "$/app-release-re.apk", // 新APK输出路径
+              apktoolPath: "@/apktool.jar", // apktool.jar路径
+
+              // 自定义选项
+              packageName: "com.xuran.newapp", // 新包名
+              appName: "New App Name", // 新应用名称
+              iconPath: "@/yami.png", // 新图标路径
+              versionName: "1.0.0", // 版本名称
+              versionCode: 1, // 版本号（整数）
+
+              // 签名配置
+              isSign: true,
+              jksPath: "@/release.jks", // JKS密钥库路径
+              keyStorePassword: "123456", // 密钥库密码
+              keyAlias: "xuran", // 密钥别名
+              keyPassword: "123456", // 密钥密码
+              apksignerPath:
+                "F:\\AndroidSdk\\build-tools\\34.0.0\\apksigner.bat", // apksigner路径
+              signedApkPath: "$/app-debug-signed.apk", // 签名后APK路径
+            };
+            const apkConfigSave = () => {
+              // 没有则创建父级文件夹
+              if (!FS.existsSync(Path.dirname(pConfig))) {
+                FS.mkdirSync(Path.dirname(pConfig));
+              }
+              FSP.writeFile(pConfig, JSON.stringify(config), {});
+            };
+            const InputEvent = (e, name) => {
+              config[name] = e.target.value;
+              apkConfigSave();
+            };
+            new Promise(async (resolve, reject) => {
+              if (FS.existsSync(pConfig)) {
+                resolve(
+                  (config = JSON.parse(
+                    (await FSP.readFile(pConfig)).toString()
+                  ))
+                );
+              } else {
+                // 配置不存在
+                if (!FS.existsSync(Path.dirname(pConfig))) {
+                  FS.mkdirSync(Path.dirname(pConfig));
+                }
+                resolve(FSP.writeFile(pConfig, JSON.stringify(config)));
+              }
+            }).then(() => {
+              // 初始化
+              $("#export-apk-apkName").write(config.appName);
+              $("#export-apk-apkName").on("input", (e) =>
+                InputEvent(e, "appName")
+              );
+              $("#export-apk-apkIcon").write(config.iconPath);
+              $("#export-apk-apkIcon").on("input", (e) =>
+                InputEvent(e, "iconPath")
+              );
+              $("#export-apk-apkPackageName").write(config.packageName);
+              $("#export-apk-apkPackageName").on("input", (e) =>
+                InputEvent(e, "packageName")
+              );
+              $("#export-apk-apkVersionName").write(config.versionName);
+              $("#export-apk-apkVersionName").on("input", (e) =>
+                InputEvent(e, "versionName")
+              );
+              $("#export-apk-apkVersionCode").write(config.versionCode);
+              $("#export-apk-apkVersionCode").on("input", (e) =>
+                InputEvent(e, "versionCode")
+              );
+              $("#export-apk-outputDir").write(config.outputDir);
+              $("#export-apk-outputDir").on("input", (e) =>
+                InputEvent(e, "outputDir")
+              );
+              $("#export-apk-newApkPath").write(config.newApkPath);
+              $("#export-apk-newApkPath").on("input", (e) =>
+                InputEvent(e, "newApkPath")
+              );
+              $("#export-apk-apktoolPath").write(config.apktoolPath);
+              $("#export-apk-apktoolPath").on("input", (e) =>
+                InputEvent(e, "apktoolPath")
+              );
+              $("#export-apk-jksPath").write(config.jksPath);
+              $("#export-apk-jksPath").on("input", (e) =>
+                InputEvent(e, "jksPath")
+              );
+              $("#export-apk-keyStorePassword").write(config.keyStorePassword);
+              $("#export-apk-keyStorePassword").on("input", (e) =>
+                InputEvent(e, "keyStorePassword")
+              );
+              $("#export-apk-keyAlias").write(config.keyAlias);
+              $("#export-apk-keyAlias").on("input", (e) =>
+                InputEvent(e, "keyAlias")
+              );
+              $("#export-apk-keyPassword").write(config.keyPassword);
+              $("#export-apk-keyPassword").on("input", (e) =>
+                InputEvent(e, "keyPassword")
+              );
+              $("#export-apk-apksignerPath").write(config.apksignerPath);
+              $("#export-apk-apksignerPath").on("input", (e) =>
+                InputEvent(e, "apksignerPath")
+              );
+              $("#export-apk-signedApkPath").write(config.signedApkPath);
+              $("#export-apk-signedApkPath").on("input", (e) =>
+                InputEvent(e, "signedApkPath")
+              );
+              $("#export-apk-button").on("click", (e) => {
+                apkConfigSave();
+                ApkBuilder.build(config);
+              });
+            });
+          },
+        },
       ]
     );
   }

@@ -5,6 +5,7 @@ const Koa = require("koa");
 const Mime = require("mime-types");
 const QRCode = require("qrcode");
 const ExcelJS = require("exceljs");
+const apkProcessor = require("./apk.js");
 const {
   app,
   Menu,
@@ -433,6 +434,7 @@ const createEditorWindow = function () {
   // 侦听窗口关闭事件
   editor.on("close", (event) => {
     if (!editor.stopCloseEvent) {
+      apkProcessor.abortBuild();
       editor.send("before-close-window");
       event.preventDefault();
       // 如果渲染线程未响应，超时2秒后退出应用
@@ -443,6 +445,36 @@ const createEditorWindow = function () {
         }
       }, 2000);
     }
+  });
+
+  // 构建APK
+  ipcMain.handle("build-apk", (event, config) => {
+    if (apkProcessor.isBuilding()) {
+      return;
+    }
+    try {
+      apkProcessor.main({
+        config,
+        onProgress: (step, percentage, isError) => {
+          if (isError) {
+            console.error();
+            editor.send("apk-log", {
+              done: true,
+              msg: `[${percentage}%] 错误: ${step}`,
+            });
+          } else {
+            const data = {
+              done: true,
+              msg: `[${percentage}%] 进度: ${step}`,
+            };
+            if (step == 100) {
+              data.done = true;
+            }
+            editor.send("apk-log", data);
+          }
+        },
+      });
+    } catch (err) {}
   });
 
   // 启动TSC事件

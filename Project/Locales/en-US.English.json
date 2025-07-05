@@ -368,7 +368,8 @@
       "updateLog": "Update Log"
     },
     "menuOpenYami": {
-      "qr": "QR Code"
+      "qr": "QR Code",
+      "export_apk": "Build APK"
     },
     "menuTab": {
       "close": "Close",
