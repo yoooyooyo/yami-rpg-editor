@@ -34,6 +34,7 @@ const defaultConfig = {
   keyPassword: "123456", // 密钥密码
   apksignerPath: "F:\\AndroidSdk\\build-tools\\34.0.0\\apksigner.bat", // apksigner路径
   signedApkPath: "$/app-debug-signed.apk", // 签名后APK路径
+  zipalignPath: "F:\\AndroidSdk\\build-tools\\34.0.0\\zipalign.exe",
 
   // 项目路径
   projectPath: "",
@@ -180,6 +181,11 @@ async function main(options = {}) {
     currentProgress += 15; // 90%
     onProgress?.("重新编译APK完成", currentProgress);
 
+    // 新增：执行zipalign对齐（关键步骤）
+    await zipalignApk(config);
+    currentProgress += 5; // 95%
+    onProgress?.("APK对齐处理完成", currentProgress);
+
     // 签名
     config.isSign && (await signApk(config));
     currentProgress = 100;
@@ -197,7 +203,7 @@ async function main(options = {}) {
 // 反编译APK
 async function decompileApk(config) {
   console.log("开始反编译APK...");
-  const cmd = `java -jar "${config.apktoolPath}" d "${config.apkPath}" -o "${config.outputDir}" -f`;
+  const cmd = `java -jar "${config.apktoolPath}" d "${config.apkPath}" -o "${config.outputDir}" -f --only-main-classes`;
 
   return new Promise((resolve, reject) => {
     const child = exec(cmd, (error, stdout, stderr) => {
@@ -225,38 +231,42 @@ async function decompileApk(config) {
 // 重新编译APK
 async function rebuildApk(config) {
   console.log("重新编译APK...");
-  const cmd = `java -jar "${config.apktoolPath}" b "${config.outputDir}" -o "${config.newApkPath}"`;
+  // 修正参数顺序：将构建选项放在项目路径之前
+  const cmd = `java -jar "${config.apktoolPath}" b --no-compress resources.arsc --align 4 "${config.outputDir}" -o "${config.newApkPath}"`;
 
-  return new Promise((resolve, reject) => {
-    const child = exec(cmd, (error, stdout, stderr) => {
-      currentChildProcess = null;
-      if (error) {
-        // 提供更详细的错误信息
-        const errorMsg =
-          `重新编译失败: ${error.stderr || error.message}\n` +
-          `可能原因:\n` +
-          `1. 资源冲突(如图标格式不统一)\n` +
-          `2. AndroidManifest.xml格式错误\n` +
-          `3. 缺少依赖框架\n` +
-          `4. public.xml 中的资源引用问题\n` +
-          `建议: 检查反编译目录中的错误日志`;
-        reject(errorMsg);
-      } else {
-        console.log("重新编译成功");
-        resolve();
+  try {
+    console.log(`执行命令: ${cmd}`);
+    const { stdout, stderr } = await execPromise(cmd);
+
+    // 检查是否有警告或错误
+    if (stderr && (stderr.includes("W:") || stderr.includes("error:"))) {
+      console.error("编译警告/错误:", stderr);
+
+      // 不是所有警告都是致命的，所以尝试继续
+      if (
+        !stderr.includes("failed linking references") &&
+        !stderr.includes('Exception in thread "main"')
+      ) {
+        console.log("重新编译成功（有警告）");
+        return;
       }
-    });
 
-    currentChildProcess = child;
+      throw new Error(stderr);
+    }
 
-    // 监听中止信号
-    abortController.signal.addEventListener("abort", () => {
-      if (child) {
-        child.kill("SIGINT");
-        reject("构建已被用户中断");
-      }
-    });
-  });
+    console.log("重新编译成功");
+  } catch (error) {
+    // 提供更详细的错误信息
+    const errorMsg =
+      `重新编译失败: ${error.stderr || error.message}\n` +
+      `可能原因:\n` +
+      `1. 资源冲突(如图标格式不统一)\n` +
+      `2. AndroidManifest.xml格式错误\n` +
+      `3. 缺少依赖框架\n` +
+      `4. public.xml 中的资源引用问题\n` +
+      `建议: 检查反编译目录中的错误日志`;
+    throw new Error(errorMsg);
+  }
 }
 
 // 修改AndroidManifest.xml
@@ -281,6 +291,19 @@ async function modifyManifest(config) {
     }
     if (config.versionCode !== undefined) {
       result.manifest.$["android:versionCode"] = config.versionCode.toString();
+    }
+
+    // 【新增】设置targetSdkVersion为30以满足Android R+要求
+    if (!result.manifest["uses-sdk"]) {
+      result.manifest["uses-sdk"] = [{ $: {} }];
+    }
+    const usesSdk = Array.isArray(result.manifest["uses-sdk"])
+      ? result.manifest["uses-sdk"][0]
+      : result.manifest["uses-sdk"];
+    usesSdk.$["android:targetSdkVersion"] = "30";
+    // 可选：确保minSdkVersion兼容性
+    if (!usesSdk.$["android:minSdkVersion"]) {
+      usesSdk.$["android:minSdkVersion"] = "21";
     }
 
     // 确保application标签中只保留正确的icon引用和设置应用名称
@@ -649,6 +672,34 @@ async function rebuildApk(config) {
       `4. public.xml 中的资源引用问题\n` +
       `建议: 检查反编译目录中的错误日志`;
     throw new Error(errorMsg);
+  }
+}
+
+// 对APK进行zipalign对齐处理（Android 11+要求）
+async function zipalignApk(config) {
+  console.log("执行zipalign对齐处理...");
+
+  if (!fileExists(config.zipalignPath)) {
+    throw new Error(`zipalign工具不存在: ${config.zipalignPath}`);
+  }
+
+  // 对齐后的临时文件路径
+  const alignedTempPath = `${config.newApkPath}.aligned`;
+
+  // zipalign命令：-f 强制覆盖；4 按4字节对齐
+  const cmd = `"${config.zipalignPath}" -f 4 "${config.newApkPath}" "${alignedTempPath}"`;
+
+  try {
+    console.log(`执行zipalign命令: ${cmd}`);
+    const { stdout, stderr } = await execPromise(cmd);
+
+    // 替换原始文件为对齐后的文件
+    await fs.promises.unlink(config.newApkPath);
+    await fs.promises.rename(alignedTempPath, config.newApkPath);
+
+    console.log("✅ zipalign对齐处理完成");
+  } catch (error) {
+    throw new Error(`zipalign处理失败: ${error.stderr || error.message}`);
   }
 }
 
