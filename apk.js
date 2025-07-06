@@ -90,11 +90,22 @@ async function copyFolderAsync(source, destination) {
   }
 }
 
+// 发送日志函数
+function sendLog(msg, percentage = null, isError = false) {
+  if (global.editor && typeof global.editor.send === 'function') {
+    global.editor.send("apk-log", {
+      done: isError,
+      msg: percentage !== null ? `[${percentage}%] ${msg}` : msg
+    });
+  }
+}
+
 // 主执行函数
 async function main(options = {}) {
   // 如果正在构建中，拒绝新的构建请求
   if (isBuilding) {
-    throw new Error("当前已有构建任务正在进行中");
+    sendLog("当前已有构建任务正在进行中", null, false);
+    return false;
   }
 
   const { config: userConfig, onProgress, signal } = options;
@@ -112,7 +123,7 @@ async function main(options = {}) {
   }
 
   try {
-    console.log("开始处理APK...");
+    sendLog("开始处理APK...");
 
     // 验证必要文件是否存在
     const requiredFiles = [
@@ -123,96 +134,155 @@ async function main(options = {}) {
 
     for (const file of requiredFiles) {
       if (!fileExists(file.path)) {
-        throw new Error(`${file.name}文件不存在: ${file.path}`);
+        sendLog(`${file.name}文件不存在: ${file.path}`, currentProgress, true);
+        return false;
       }
     }
 
-    console.log("文件验证通过");
     currentProgress = 5;
     onProgress?.("文件验证通过", currentProgress);
+    sendLog("文件验证通过", currentProgress);
 
     // 删除旧的反编译目录
     if (fs.existsSync(config.outputDir)) {
-      console.log("删除旧的反编译目录...");
       await fs.promises.rm(config.outputDir, { recursive: true, force: true });
     }
     currentProgress += 5; // 10%
     onProgress?.("删除旧目录", currentProgress);
+    sendLog("删除旧目录完成", currentProgress);
 
     // 反编译APK
-    await decompileApk(config);
+    const decompileResult = await decompileApk(config);
+    if (!decompileResult.success) {
+      sendLog(decompileResult.error, currentProgress, true);
+      return false;
+    }
     currentProgress += 15; // 25%
     onProgress?.("反编译APK完成", currentProgress);
+    sendLog("反编译APK完成", currentProgress);
 
     // 修改AndroidManifest.xml
-    await modifyManifest(config);
+    const manifestResult = await modifyManifest(config);
+    if (!manifestResult.success) {
+      sendLog(manifestResult.error, currentProgress, true);
+      return false;
+    }
     currentProgress += 10; // 35%
     onProgress?.("修改AndroidManifest.xml完成", currentProgress);
+    sendLog("修改AndroidManifest.xml完成", currentProgress);
 
     // 修改所有语言的应用名称
-    await modifyStrings(config);
+    const stringsResult = await modifyStrings(config);
+    if (!stringsResult.success) {
+      sendLog(stringsResult.error, currentProgress, true);
+      return false;
+    }
     currentProgress += 10; // 45%
     onProgress?.("修改应用名称完成", currentProgress);
+    sendLog("修改应用名称完成", currentProgress);
 
     // 替换应用图标
-    await replaceIconsWithSharp(config);
+    const iconsResult = await replaceIconsWithSharp(config);
+    if (!iconsResult.success) {
+      sendLog(iconsResult.error, currentProgress, true);
+      return false;
+    }
     currentProgress += 15; // 60%
     onProgress?.("替换应用图标完成", currentProgress);
+    sendLog("替换应用图标完成", currentProgress);
 
     // 完全移除圆形图标资源
-    await removeRoundIcons(config);
+    const roundIconsResult = await removeRoundIcons(config);
+    if (!roundIconsResult.success) {
+      sendLog(roundIconsResult.error, currentProgress, true);
+      return false;
+    }
     currentProgress += 5; // 65%
     onProgress?.("移除圆形图标资源完成", currentProgress);
+    sendLog("移除圆形图标资源完成", currentProgress);
 
     // 修复资源引用问题
-    await fixResourceReferences(config);
+    const resourceResult = await fixResourceReferences(config);
+    if (!resourceResult.success) {
+      sendLog(resourceResult.error, currentProgress, true);
+      return false;
+    }
     currentProgress += 10; // 75%
     onProgress?.("修复资源引用完成", currentProgress);
+    sendLog("修复资源引用完成", currentProgress);
 
     // 复制项目资源文件
-    await copyFolderAsync(
-      path.resolve(config.projectPath, ".preview"),
-      path.resolve(config.outputDir, "assets")
-    );
-    onProgress?.("资源合并完成", currentProgress);
+    try {
+      await copyFolderAsync(
+        path.resolve(config.projectPath, ".preview"),
+        path.resolve(config.outputDir, "assets")
+      );
+      onProgress?.("资源合并完成", currentProgress);
+      sendLog("资源合并完成", currentProgress);
+    } catch (err) {
+      sendLog(`资源合并失败: ${err.message}`, currentProgress, true);
+      return false;
+    }
 
     // 重新编译APK
-    await rebuildApk(config);
+    const rebuildResult = await rebuildApk(config);
+    if (!rebuildResult.success) {
+      sendLog(rebuildResult.error, currentProgress, true);
+      return false;
+    }
     currentProgress += 15; // 90%
     onProgress?.("重新编译APK完成", currentProgress);
+    sendLog("重新编译APK完成", currentProgress);
 
     // 新增：执行zipalign对齐（关键步骤）
-    await zipalignApk(config);
+    const zipalignResult = await zipalignApk(config);
+    if (!zipalignResult.success) {
+      sendLog(zipalignResult.error, currentProgress, true);
+      return false;
+    }
     currentProgress += 5; // 95%
     onProgress?.("APK对齐处理完成", currentProgress);
+    sendLog("APK对齐处理完成", currentProgress);
 
     // 签名
-    config.isSign && (await signApk(config));
+    if (config.isSign) {
+      const signResult = await signApk(config);
+      if (!signResult.success) {
+        sendLog(signResult.error, currentProgress, true);
+        return false;
+      }
+    }
     currentProgress = 100;
     onProgress?.("APK处理完成", currentProgress);
+    sendLog("APK处理完成", currentProgress);
 
-    console.log("\n✅ APK修改完成! 新文件:", config.signedApkPath);
-    console.log("可以直接安装到设备");
+    sendLog(`✅ APK修改完成! 新文件: ${config.signedApkPath}\n可以直接安装到设备`);
+    return true;
   } catch (err) {
-    console.error("\n❌ 处理失败:", err);
     onProgress?.("处理失败: " + err.message, currentProgress, true);
-    process.exit(1);
+    sendLog(`处理失败: ${err.message}`, currentProgress, true);
+    return false;
+  } finally {
+    isBuilding = false;
   }
 }
 
 // 反编译APK
 async function decompileApk(config) {
-  console.log("开始反编译APK...");
+  // console.log("开始反编译APK...");
   const cmd = `java -jar "${config.apktoolPath}" d "${config.apkPath}" -o "${config.outputDir}" -f --only-main-classes`;
 
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     const child = exec(cmd, (error, stdout, stderr) => {
       currentChildProcess = null;
       if (error) {
-        reject(new Error(`反编译失败: ${error.stderr || error.message}`));
+        resolve({
+          success: false,
+          error: `反编译失败: ${error.stderr || error.message}`
+        });
       } else {
-        console.log("反编译成功");
-        resolve();
+        // console.log("反编译成功");
+        resolve({ success: true });
       }
     });
 
@@ -222,7 +292,10 @@ async function decompileApk(config) {
     abortController.signal.addEventListener("abort", () => {
       if (child) {
         child.kill("SIGINT");
-        reject("构建已被用户中断");
+        resolve({
+          success: false,
+          error: "构建已被用户中断"
+        });
       }
     });
   });
@@ -230,31 +303,35 @@ async function decompileApk(config) {
 
 // 重新编译APK
 async function rebuildApk(config) {
-  console.log("重新编译APK...");
+  // console.log("重新编译APK...");
   // 修正参数顺序：将构建选项放在项目路径之前
   const cmd = `java -jar "${config.apktoolPath}" b --no-compress resources.arsc --align 4 "${config.outputDir}" -o "${config.newApkPath}"`;
 
   try {
-    console.log(`执行命令: ${cmd}`);
+    // console.log(`执行命令: ${cmd}`);
     const { stdout, stderr } = await execPromise(cmd);
 
     // 检查是否有警告或错误
     if (stderr && (stderr.includes("W:") || stderr.includes("error:"))) {
-      console.error("编译警告/错误:", stderr);
+      // console.error("编译警告/错误:", stderr);
 
       // 不是所有警告都是致命的，所以尝试继续
       if (
         !stderr.includes("failed linking references") &&
         !stderr.includes('Exception in thread "main"')
       ) {
-        console.log("重新编译成功（有警告）");
-        return;
+        // console.log("重新编译成功（有警告）");
+        return { success: true };
       }
 
-      throw new Error(stderr);
+      return {
+        success: false,
+        error: `重新编译失败: ${stderr}`
+      };
     }
 
     console.log("重新编译成功");
+    return { success: true };
   } catch (error) {
     // 提供更详细的错误信息
     const errorMsg =
@@ -265,13 +342,16 @@ async function rebuildApk(config) {
       `3. 缺少依赖框架\n` +
       `4. public.xml 中的资源引用问题\n` +
       `建议: 检查反编译目录中的错误日志`;
-    throw new Error(errorMsg);
+    return {
+      success: false,
+      error: errorMsg
+    };
   }
 }
 
 // 修改AndroidManifest.xml
 async function modifyManifest(config) {
-  console.log("修改包名、应用名称和版本信息...");
+  // console.log("修改包名、应用名称和版本信息...");
   const manifestPath = path.join(config.outputDir, "AndroidManifest.xml");
 
   try {
@@ -314,21 +394,25 @@ async function modifyManifest(config) {
 
     // 验证修改结果
     const modifiedXml = await fs.promises.readFile(manifestPath, "utf8");
-    if (modifiedXml.includes("roundIcon")) {
-      console.warn("警告：仍检测到roundIcon引用，可能未完全删除");
-    } else {
-      console.log("AndroidManifest.xml中roundIcon引用已完全删除");
-    }
+    // if (modifiedXml.includes("roundIcon")) {
+    //   console.warn("警告：仍检测到roundIcon引用，可能未完全删除");
+    // } else {
+    //   console.log("AndroidManifest.xml中roundIcon引用已完全删除");
+    // }
 
-    console.log("包名、应用名称和版本信息修改完成");
+    // console.log("包名、应用名称和版本信息修改完成");
+    return { success: true };
   } catch (err) {
-    throw new Error(`修改AndroidManifest.xml失败: ${err.message}`);
+    return {
+      success: false,
+      error: `修改AndroidManifest.xml失败: ${err.message}`
+    };
   }
 }
 
 // 修改所有语言的应用名称
 async function modifyStrings(config) {
-  console.log("修改所有语言的应用名称...");
+  // console.log("修改所有语言的应用名称...");
   const resDir = path.join(config.outputDir, "res");
 
   try {
@@ -347,9 +431,13 @@ async function modifyStrings(config) {
       }
     }
 
-    console.log("所有语言的应用名称修改完成");
+    // console.log("所有语言的应用名称修改完成");
+    return { success: true };
   } catch (err) {
-    throw new Error(`修改strings.xml失败: ${err.message}`);
+    return {
+      success: false,
+      error: `修改strings.xml失败: ${err.message}`
+    };
   }
 }
 
@@ -387,9 +475,9 @@ async function updateStringsFile(stringsPath, config) {
     const newXml = builder.buildObject(result);
     await fs.promises.writeFile(stringsPath, newXml);
 
-    console.log(`已更新: ${stringsPath}`);
+    // console.log(`已更新: ${stringsPath}`);
   } catch (err) {
-    console.error(`更新 ${stringsPath} 失败: ${err.message}`);
+    // console.error(`更新 ${stringsPath} 失败: ${err.message}`);
     throw err;
   }
 }
@@ -417,7 +505,7 @@ async function replaceIconsWithSharp(config) {
       if (!metadata.width || !metadata.height) {
         throw new Error("无法读取图标尺寸");
       }
-      console.log(`源图标尺寸: ${metadata.width}x${metadata.height}`);
+      // console.log(`源图标尺寸: ${metadata.width}x${metadata.height}`);
     } catch (err) {
       throw new Error(`源图标文件无效: ${err.message}`);
     }
@@ -434,7 +522,7 @@ async function replaceIconsWithSharp(config) {
 
     // 处理每个目录
     for (const dirPath of iconDirs) {
-      console.log(`处理目录: ${dirPath}`);
+      // console.log(`处理目录: ${dirPath}`);
 
       // 获取目录对应的尺寸
       const dirName = path.basename(dirPath);
@@ -446,7 +534,7 @@ async function replaceIconsWithSharp(config) {
         if (file.startsWith("ic_launcher")) {
           const filePath = path.join(dirPath, file);
           await fs.promises.unlink(filePath);
-          console.log(`已删除旧图标: ${filePath}`);
+          // console.log(`已删除旧图标: ${filePath}`);
         }
       }
 
@@ -460,15 +548,19 @@ async function replaceIconsWithSharp(config) {
           background: { r: 0, g: 0, b: 0, alpha: 0 },
         })
         .toFile(destPath);
-      console.log(`已生成 ${targetSize}x${targetSize} 图标: ${destPath}`);
+      // console.log(`已生成 ${targetSize}x${targetSize} 图标: ${destPath}`);
     }
 
     // 3. 删除anydpi目录中的自适应图标配置
     await removeAdaptiveIconConfigs(config);
 
     console.log("所有图标目录处理完成");
+    return { success: true };
   } catch (err) {
-    throw new Error(`替换图标失败: ${err.message}`);
+    return {
+      success: false,
+      error: `替换图标失败: ${err.message}`
+    };
   }
 }
 
@@ -488,7 +580,7 @@ async function removeAdaptiveIconConfigs(config) {
         if (file === "ic_launcher.xml" || file === "ic_launcher_round.xml") {
           const filePath = path.join(anydpiPath, file);
           await fs.promises.unlink(filePath);
-          console.log(`已删除自适应图标配置: ${filePath}`);
+          // console.log(`已删除自适应图标配置: ${filePath}`);
         }
       }
     }
@@ -497,7 +589,7 @@ async function removeAdaptiveIconConfigs(config) {
 
 // 完全移除圆形图标资源
 async function removeRoundIcons(config) {
-  console.log("移除圆形图标资源...");
+  // console.log("移除圆形图标资源...");
 
   try {
     const resDir = path.join(config.outputDir, "res");
@@ -522,15 +614,19 @@ async function removeRoundIcons(config) {
       }
     }
 
-    console.log("圆形图标资源已移除");
+    // console.log("圆形图标资源已移除");
+    return { success: true };
   } catch (err) {
-    throw new Error(`移除圆形图标失败: ${err.message}`);
+    return {
+      success: false,
+      error: `移除圆形图标失败: ${err.message}`
+    };
   }
 }
 
 // 修复资源引用问题
 async function fixResourceReferences(config) {
-  console.log("修复资源引用问题...");
+  // console.log("修复资源引用问题...");
 
   try {
     // 1. 清理public.xml中的无效引用
@@ -541,7 +637,7 @@ async function fixResourceReferences(config) {
       "public.xml"
     );
     if (fs.existsSync(publicXmlPath)) {
-      console.log("清理 public.xml 中的无效引用...");
+      // console.log("清理 public.xml 中的无效引用...");
       await cleanPublicXml(publicXmlPath);
     }
 
@@ -557,9 +653,13 @@ async function fixResourceReferences(config) {
       await cleanStylesXml(stylesPath);
     }
 
-    console.log("资源引用修复完成");
+    // console.log("资源引用修复完成");
+    return { success: true };
   } catch (err) {
-    throw new Error(`修复资源引用失败: ${err.message}`);
+    return {
+      success: false,
+      error: `修复资源引用失败: ${err.message}`
+    };
   }
 }
 
@@ -618,7 +718,7 @@ async function cleanPublicXml(publicXmlPath) {
   const builder = new Builder();
   const newXml = builder.buildObject(result);
   await fs.promises.writeFile(publicXmlPath, newXml);
-  console.log("public.xml已更新，保留ic_launcher资源映射");
+  // console.log("public.xml已更新，保留ic_launcher资源映射");
 }
 
 // 重新编译APK
@@ -627,12 +727,12 @@ async function rebuildApk(config) {
   const cmd = `java -jar "${config.apktoolPath}" b "${config.outputDir}" -o "${config.newApkPath}"`;
 
   try {
-    console.log(`执行命令: ${cmd}`);
+    // console.log(`执行命令: ${cmd}`);
     const { stdout, stderr } = await execPromise(cmd);
 
     // 检查是否有警告或错误
     if (stderr && (stderr.includes("W:") || stderr.includes("error:"))) {
-      console.error("编译警告/错误:", stderr);
+      // console.error("编译警告/错误:", stderr);
 
       // 不是所有警告都是致命的，所以尝试继续
       if (
@@ -640,13 +740,17 @@ async function rebuildApk(config) {
         !stderr.includes('Exception in thread "main"')
       ) {
         console.log("重新编译成功（有警告）");
-        return;
+        return { success: true };
       }
 
-      throw new Error(stderr);
+      return {
+        success: false,
+        error: `重新编译失败: ${stderr}`
+      };
     }
 
-    console.log("重新编译成功");
+    // console.log("重新编译成功");
+    return { success: true };
   } catch (error) {
     // 提供更详细的错误信息
     const errorMsg =
@@ -657,7 +761,10 @@ async function rebuildApk(config) {
       `3. 缺少依赖框架\n` +
       `4. public.xml 中的资源引用问题\n` +
       `建议: 检查反编译目录中的错误日志`;
-    throw new Error(errorMsg);
+    return {
+      success: false,
+      error: errorMsg
+    };
   }
 }
 
@@ -666,7 +773,10 @@ async function zipalignApk(config) {
   console.log("执行zipalign对齐处理...");
 
   if (!fileExists(config.zipalignPath)) {
-    throw new Error(`zipalign工具不存在: ${config.zipalignPath}`);
+    return {
+      success: false,
+      error: `zipalign工具不存在: ${config.zipalignPath}`
+    };
   }
 
   // 对齐后的临时文件路径
@@ -676,7 +786,7 @@ async function zipalignApk(config) {
   const cmd = `"${config.zipalignPath}" -f 4 "${config.newApkPath}" "${alignedTempPath}"`;
 
   try {
-    console.log(`执行zipalign命令: ${cmd}`);
+    // console.log(`执行zipalign命令: ${cmd}`);
     const { stdout, stderr } = await execPromise(cmd);
 
     // 替换原始文件为对齐后的文件
@@ -684,14 +794,18 @@ async function zipalignApk(config) {
     await fs.promises.rename(alignedTempPath, config.newApkPath);
 
     console.log("✅ zipalign对齐处理完成");
+    return { success: true };
   } catch (error) {
-    throw new Error(`zipalign处理失败: ${error.stderr || error.message}`);
+    return {
+      success: false,
+      error: `zipalign处理失败: ${error.stderr || error.message}`
+    };
   }
 }
 
 // 签名APK
 async function signApk(config) {
-  console.log("签名APK...");
+  // console.log("签名APK...");
 
   // 使用apksigner进行签名
   const signCmd = `${config.apksignerPath} sign --ks "${config.jksPath}" --ks-pass pass:"${config.keyStorePassword}" --key-pass pass:"${config.keyPassword}" --ks-key-alias ${config.keyAlias} --out "${config.signedApkPath}" "${config.newApkPath}"`;
@@ -701,12 +815,12 @@ async function signApk(config) {
 
   try {
     // 首先尝试使用apksigner
-    console.log("使用apksigner进行签名...");
-    console.log(`执行命令: ${signCmd}`);
+    // console.log("使用apksigner进行签名...");
+    // console.log(`执行命令: ${signCmd}`);
     const { stdout, stderr } = await execPromise(signCmd);
-    console.log("apksigner签名成功");
+    // console.log("apksigner签名成功");
   } catch (apksignerError) {
-    console.warn("apksigner签名失败，尝试使用jarsigner...");
+    // console.warn("apksigner签名失败，尝试使用jarsigner...");
 
     try {
       // 如果apksigner失败，尝试使用jarsigner
@@ -716,17 +830,19 @@ async function signApk(config) {
       // 将签名后的文件移动到最终位置
       await fs.promises.rename(config.newApkPath, config.signedApkPath);
 
-      console.log("jarsigner签名成功");
+      // console.log("jarsigner签名成功");
     } catch (jarsignerError) {
-      throw new Error(
-        `签名失败:\nAPKSigner错误: ${apksignerError.stderr || apksignerError.message
-        }\nJarSigner错误: ${jarsignerError.stderr || jarsignerError.message}`
-      );
+      return {
+        success: false,
+        error: `签名失败:\nAPKSigner错误: ${apksignerError.stderr || apksignerError.message
+          }\nJarSigner错误: ${jarsignerError.stderr || jarsignerError.message}`
+      };
     }
   }
 
   // 验证签名
   await verifySignature(config);
+  return { success: true };
 }
 
 // 验证签名
@@ -762,7 +878,7 @@ function parseXml(xml) {
 function abortBuild() {
   if (!isBuilding) return false;
 
-  console.log("正在中止构建任务...");
+  // console.log("正在中止构建任务...");
   abortController?.abort();
 
   // 终止当前子进程

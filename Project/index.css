@@ -11713,6 +11713,37 @@ text.update-log-minor {
 }
 
 /* --------------------------------
+ * 进度窗口
+ * --------------------------------
+ */
+ #windowProgress {
+	width: 380px;
+	height: 116px;
+}
+
+#windowProgress-flex {
+	margin: 10px;
+	flex-direction: column;
+}
+
+#windowProgress-box {
+	display: block;
+	height: 20px;
+	background-color: var(--input-background);
+	border: var(--input-border);
+	border-radius: 2px;
+	overflow: hidden;
+}
+
+#windowProgress-bar {
+	display: block;
+	width: 100%;
+	height: 100%;
+	background-color: var(--selected-background);
+}
+
+
+/* --------------------------------
  * 构建APK窗口
  * --------------------------------
  */

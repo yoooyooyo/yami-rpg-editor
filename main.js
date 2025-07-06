@@ -193,19 +193,19 @@ ipcMain.handle("from-excel", async (event) => {
     const isDir = row.getCell(headers.indexOf("isDir") + 1).value === 1;
     const rowData = isDir
       ? {
-          class: "folder",
-          id: row.getCell(headers.indexOf("ID") + 1).value,
-          name: row.getCell(headers.indexOf("Name") + 1).value || "",
-          parentID: row.getCell(headers.indexOf("parentID") + 1).value,
-          expanded: false,
-          children: [],
-        }
+        class: "folder",
+        id: row.getCell(headers.indexOf("ID") + 1).value,
+        name: row.getCell(headers.indexOf("Name") + 1).value || "",
+        parentID: row.getCell(headers.indexOf("parentID") + 1).value,
+        expanded: false,
+        children: [],
+      }
       : {
-          id: row.getCell(headers.indexOf("ID") + 1).value,
-          name: row.getCell(headers.indexOf("Name") + 1).value,
-          parentID: row.getCell(headers.indexOf("parentID") + 1).value,
-          contents: {},
-        };
+        id: row.getCell(headers.indexOf("ID") + 1).value,
+        name: row.getCell(headers.indexOf("Name") + 1).value,
+        parentID: row.getCell(headers.indexOf("parentID") + 1).value,
+        contents: {},
+      };
     if (!isDir) {
       // 收集多语言内容
       langColumns.forEach((lang) => {
@@ -302,7 +302,7 @@ app.on("ready", () => {
   dirs.forEach(async (v) => {
     try {
       await session.defaultSession.loadExtension(v);
-    } catch {}
+    } catch { }
   });
 });
 
@@ -447,9 +447,15 @@ const createEditorWindow = function () {
     }
   });
 
+  global.editor = editor;
+
   // 构建APK
   ipcMain.handle("build-apk", (event, config) => {
     if (apkProcessor.isBuilding()) {
+      editor.send("apk-log", {
+        done: true,
+        msg: `当前已有构建任务正在进行中`,
+      });
       return;
     }
     try {
@@ -457,7 +463,6 @@ const createEditorWindow = function () {
         config,
         onProgress: (step, percentage, isError) => {
           if (isError) {
-            console.error();
             editor.send("apk-log", {
               done: true,
               msg: `[${percentage}%] 错误: ${step}`,
@@ -474,7 +479,12 @@ const createEditorWindow = function () {
           }
         },
       });
-    } catch (err) {}
+    } catch (err) {
+      editor.send("apk-log", {
+        done: true,
+        msg: `错误: ${err}`,
+      });
+    }
   });
 
   // 启动TSC事件
@@ -700,8 +710,8 @@ ipcMain.handle("update-max-min-icon", (event) => {
   return window.isMaximized()
     ? "maximize"
     : window.isFullScreen()
-    ? "enter-full-screen"
-    : "unmaximize";
+      ? "enter-full-screen"
+      : "unmaximize";
 });
 
 // 显示打开对话框

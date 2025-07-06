@@ -1,7 +1,11 @@
-const ApkBuilder = {
-  isBindOn: false,
-  build(config) {
-    if (this.isBindOn) return;
+const ApkBuilder = (new class {
+  isBindOn = false;
+  constructor() {
+    this.isBindOn = false;
+    require("electron").ipcRenderer.on("apk-log", this.apkLog);
+  }
+  build(cfg) {
+    const config = JSON.parse(JSON.stringify(cfg));
     $("#export-apk-content").clear();
     // 处理路径
     const pathPrefix = Path.resolve(Path.dirname(Editor.config.project), "apk");
@@ -16,12 +20,8 @@ const ApkBuilder = {
       }
     });
     config.projectPath = Path.dirname(Editor.config.project)
-    if (!this.isBindOn) {
-      require("electron").ipcRenderer.on("apk-log", this.apkLog);
-    }
     require("electron").ipcRenderer.invoke("build-apk", config);
-    this.isBindOn = true;
-  },
+  }
   apkLog(event, log) {
     const text = document.createElement("text");
     text.textContent = log.msg;
@@ -32,8 +32,13 @@ const ApkBuilder = {
       this.isBindOn = false;
       $("#export-apk-button").enable();
     }
+    console.log("log", log);
     $("#export-apk-container").scrollTo({
       top: $("#export-apk-container").scrollHeight,
     });
-  },
-};
+  }
+  reset() {
+    $("#export-apk-content").clear();
+    $("#export-apk-button").enable();
+  }
+});

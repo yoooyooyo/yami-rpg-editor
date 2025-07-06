@@ -2201,6 +2201,12 @@ Menubar.popupOpenYamiMenu = function (target) {
           enabled: open,
           click: async () => {
             Window.open("export-apk");
+            Window.open("windowProgress");
+            const progressInfo = $("#windowProgress-info");
+            progressInfo.textContent = "加载中...";
+            $("#export-apk").on("closed", () => {
+              ApkBuilder.reset();
+            }, { once: true });
             // 解析本地构建APK配置
             const pConfig = Path.resolve(
               Path.dirname(Editor.config.project),
@@ -2242,7 +2248,7 @@ Menubar.popupOpenYamiMenu = function (target) {
               config[name] = e.target.value;
               apkConfigSave();
             };
-            new Promise(async (resolve, reject) => {
+            await new Promise(async (resolve, reject) => {
               if (FS.existsSync(pConfig)) {
                 resolve(
                   (config = JSON.parse(
@@ -2323,6 +2329,7 @@ Menubar.popupOpenYamiMenu = function (target) {
                 apkConfigSave();
                 ApkBuilder.build(config);
               });
+              Window.close("windowProgress");
             });
           },
         },
@@ -2330,6 +2337,7 @@ Menubar.popupOpenYamiMenu = function (target) {
     );
   }
 };
+
 
 // 创建最近的文件项目
 Menubar.createRecentItems = function () {
