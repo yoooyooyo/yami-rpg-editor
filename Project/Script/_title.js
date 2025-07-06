@@ -1327,8 +1327,8 @@ Deployment.readFileList = async function (platform) {
         encrypt && key === "images"
           ? ".dat"
           : key === "audio"
-          ? ".res"
-          : Path.extname(path);
+            ? ".res"
+            : Path.extname(path);
       const newPath = `Assets/${guid}${extname}`;
       if (key === "fonts") {
         dMetaList.push({
@@ -2216,7 +2216,7 @@ Menubar.popupOpenYamiMenu = function (target) {
               // 自定义选项
               packageName: "com.xuran.newapp", // 新包名
               appName: "New App Name", // 新应用名称
-              iconPath: "@/yami.png", // 新图标路径
+              iconPath: "~/Icon/icon.png", // 新图标路径
               versionName: "1.0.0", // 版本名称
               versionCode: 1, // 版本号（整数）
 
@@ -2227,7 +2227,8 @@ Menubar.popupOpenYamiMenu = function (target) {
               keyAlias: "xuran", // 密钥别名
               keyPassword: "123456", // 密钥密码
               apksignerPath:
-                "F:\\AndroidSdk\\build-tools\\34.0.0\\apksigner.bat", // apksigner路径
+                "@/apksigner.bat", // apksigner路径
+              zipalignPath: "@/zipalign.exe",
               signedApkPath: "$/app-debug-signed.apk", // 签名后APK路径
             };
             const apkConfigSave = () => {
@@ -2309,11 +2310,16 @@ Menubar.popupOpenYamiMenu = function (target) {
               $("#export-apk-apksignerPath").on("input", (e) =>
                 InputEvent(e, "apksignerPath")
               );
+              $("#export-apk-zipalignPath").write(config.zipalignPath);
+              $("#export-apk-zipalignPath").on("input", (e) =>
+                InputEvent(e, "zipalignPath")
+              );
               $("#export-apk-signedApkPath").write(config.signedApkPath);
               $("#export-apk-signedApkPath").on("input", (e) =>
                 InputEvent(e, "signedApkPath")
               );
               $("#export-apk-button").on("click", (e) => {
+                $("#export-apk-button").disable();
                 apkConfigSave();
                 ApkBuilder.build(config);
               });

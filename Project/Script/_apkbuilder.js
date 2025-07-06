@@ -28,7 +28,9 @@ const ApkBuilder = {
     text.addClass("export-apk-major");
     $("#export-apk-content").appendChild(text);
     if (log.done) {
+      console.log("done", log);
       this.isBindOn = false;
+      $("#export-apk-button").enable();
     }
     $("#export-apk-container").scrollTo({
       top: $("#export-apk-container").scrollHeight,

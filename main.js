@@ -464,7 +464,7 @@ const createEditorWindow = function () {
             });
           } else {
             const data = {
-              done: true,
+              done: false,
               msg: `[${percentage}%] 进度: ${step}`,
             };
             if (step == 100) {

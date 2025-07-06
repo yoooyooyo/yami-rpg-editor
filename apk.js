@@ -22,7 +22,7 @@ const defaultConfig = {
   // 自定义选项
   packageName: "com.xuran.newapp", // 新包名
   appName: "New App Name", // 新应用名称
-  iconPath: "@/yami.png", // 新图标路径
+  iconPath: "~/Icon/icon.png", // 新图标路径
   versionName: "1.0.0", // 版本名称
   versionCode: 1, // 版本号（整数）
 
@@ -32,9 +32,9 @@ const defaultConfig = {
   keyStorePassword: "123456", // 密钥库密码
   keyAlias: "xuran", // 密钥别名
   keyPassword: "123456", // 密钥密码
-  apksignerPath: "F:\\AndroidSdk\\build-tools\\34.0.0\\apksigner.bat", // apksigner路径
+  apksignerPath: "@/apksigner.bat", // apksigner路径
   signedApkPath: "$/app-debug-signed.apk", // 签名后APK路径
-  zipalignPath: "F:\\AndroidSdk\\build-tools\\34.0.0\\zipalign.exe",
+  zipalignPath: "@/zipalign.exe",
 
   // 项目路径
   projectPath: "",
@@ -719,8 +719,7 @@ async function signApk(config) {
       console.log("jarsigner签名成功");
     } catch (jarsignerError) {
       throw new Error(
-        `签名失败:\nAPKSigner错误: ${
-          apksignerError.stderr || apksignerError.message
+        `签名失败:\nAPKSigner错误: ${apksignerError.stderr || apksignerError.message
         }\nJarSigner错误: ${jarsignerError.stderr || jarsignerError.message}`
       );
     }
