@@ -5,21 +5,8 @@ const ApkBuilder = (new class {
     require("electron").ipcRenderer.on("apk-log", this.apkLog);
   }
   build(cfg) {
-    const config = JSON.parse(JSON.stringify(cfg));
     $("#export-apk-content").clear();
-    // 处理路径
-    const pathPrefix = Path.resolve(Path.dirname(Editor.config.project), "apk");
-    const list = Object.keys(config);
-    list.forEach((v) => {
-      if (typeof config[v] === "string" && config[v]?.startsWith("@")) {
-        config[v] = Path.resolve(__dirname, "Apk", config[v].replace("@", "."));
-      } else if (typeof config[v] === "string" && config[v]?.startsWith("$")) {
-        config[v] = Path.resolve(pathPrefix, config[v].replace("$", "."));
-      } else if (typeof config[v] === "string" && config[v]?.startsWith("~")) {
-        config[v] = Path.resolve(Path.dirname(Editor.config.project), config[v].replace("~", "."));
-      }
-    });
-    config.projectPath = Path.dirname(Editor.config.project)
+    const config = this.process(cfg);
     require("electron").ipcRenderer.invoke("build-apk", config);
   }
   apkLog(event, log) {
@@ -40,5 +27,25 @@ const ApkBuilder = (new class {
   reset() {
     $("#export-apk-content").clear();
     $("#export-apk-button").enable();
+  }
+  processPathOnly(line) {
+    const pathPrefix = Path.resolve(Path.dirname(Editor.config.project), "apk");
+    if (typeof line === "string" && line?.startsWith("@")) {
+      return Path.resolve(__dirname, "Apk", line.replace("@", "."));
+    } else if (typeof line === "string" && line?.startsWith("$")) {
+      return Path.resolve(pathPrefix, line.replace("$", "."));
+    } else if (typeof line === "string" && line?.startsWith("~")) {
+      return Path.resolve(Path.dirname(Editor.config.project), line.replace("~", "."));
+    }
+    return line;
+  }
+  process(cfg) {
+    const config = JSON.parse(JSON.stringify(cfg));
+    const list = Object.keys(config);
+    list.forEach((v) => {
+      config[v] = this.processPathOnly(config[v]);
+    });
+    config.projectPath = Path.dirname(Editor.config.project)
+    return config;
   }
 });

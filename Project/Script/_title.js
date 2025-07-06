@@ -2272,6 +2272,9 @@ Menubar.popupOpenYamiMenu = function (target) {
               $("#export-apk-apkIcon").on("input", (e) =>
                 InputEvent(e, "iconPath")
               );
+              $("#export-apk-apkIcon").on("mouseenter", (e) =>
+                $("#export-apk-apkIcon").setTooltip(ApkBuilder.processPathOnly(config.iconPath))
+              );
               $("#export-apk-apkPackageName").write(config.packageName);
               $("#export-apk-apkPackageName").on("input", (e) =>
                 InputEvent(e, "packageName")
@@ -2288,17 +2291,29 @@ Menubar.popupOpenYamiMenu = function (target) {
               $("#export-apk-outputDir").on("input", (e) =>
                 InputEvent(e, "outputDir")
               );
+              $("#export-apk-outputDir").on("mouseenter", (e) =>
+                $("#export-apk-outputDir").setTooltip(ApkBuilder.processPathOnly(config.outputDir))
+              );
               $("#export-apk-newApkPath").write(config.newApkPath);
               $("#export-apk-newApkPath").on("input", (e) =>
                 InputEvent(e, "newApkPath")
+              );
+              $("#export-apk-apktoolPath").on("mouseenter", (e) =>
+                $("#export-apk-apktoolPath").setTooltip(ApkBuilder.processPathOnly(config.apktoolPath))
               );
               $("#export-apk-apktoolPath").write(config.apktoolPath);
               $("#export-apk-apktoolPath").on("input", (e) =>
                 InputEvent(e, "apktoolPath")
               );
+              $("#export-apk-apktoolPath").on("mouseenter", (e) =>
+                $("#export-apk-apktoolPath").setTooltip(ApkBuilder.processPathOnly(config.apktoolPath))
+              );
               $("#export-apk-jksPath").write(config.jksPath);
               $("#export-apk-jksPath").on("input", (e) =>
                 InputEvent(e, "jksPath")
+              );
+              $("#export-apk-jksPath").on("mouseenter", (e) =>
+                $("#export-apk-jksPath").setTooltip(ApkBuilder.processPathOnly(config.jksPath))
               );
               $("#export-apk-keyStorePassword").write(config.keyStorePassword);
               $("#export-apk-keyStorePassword").on("input", (e) =>
@@ -2316,13 +2331,22 @@ Menubar.popupOpenYamiMenu = function (target) {
               $("#export-apk-apksignerPath").on("input", (e) =>
                 InputEvent(e, "apksignerPath")
               );
+              $("#export-apk-apksignerPath").on("mouseenter", (e) =>
+                $("#export-apk-apksignerPath").setTooltip(ApkBuilder.processPathOnly(config.apksignerPath))
+              );
               $("#export-apk-zipalignPath").write(config.zipalignPath);
               $("#export-apk-zipalignPath").on("input", (e) =>
                 InputEvent(e, "zipalignPath")
               );
+              $("#export-apk-zipalignPath").on("mouseenter", (e) =>
+                $("#export-apk-zipalignPath").setTooltip(ApkBuilder.processPathOnly(config.zipalignPath))
+              );
               $("#export-apk-signedApkPath").write(config.signedApkPath);
               $("#export-apk-signedApkPath").on("input", (e) =>
                 InputEvent(e, "signedApkPath")
+              );
+              $("#export-apk-signedApkPath").on("mouseenter", (e) =>
+                $("#export-apk-signedApkPath").setTooltip(ApkBuilder.processPathOnly(config.signedApkPath))
               );
               $("#export-apk-button").on("click", (e) => {
                 $("#export-apk-button").disable();
