@@ -51,6 +51,7 @@
 				]
 			},
 			"main.js",
+			"apk.js",
 			"package.json"
 		],
 		"extraResources": [
