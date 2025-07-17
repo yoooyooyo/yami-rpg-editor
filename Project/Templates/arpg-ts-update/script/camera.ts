@@ -242,11 +242,11 @@ let Camera = new class SceneCamera {
 
   /**
    * 更新摄像机的位置以及相关参数
+   * @param deltaTime 增量时间(毫秒)
    */
-  public render(): void {
-    // 将摄像机放入渲染队列以避免可能出现不同步的问题
+  public update(deltaTime: number): void {
     // 更新模块
-    this.updaters.update(Time.deltaTime)
+    this.updaters.update(deltaTime)
 
     // 计算摄像机位置
     const scene = Scene.binding
@@ -353,6 +353,14 @@ let Camera = new class SceneCamera {
     this.lightTop = scrollTop - texture.expansionTop
     this.lightRight = scrollRight + texture.expansionRight
     this.lightBottom = scrollBottom + texture.expansionBottom
+  }
+
+  /**
+   * 更新摄像机的位置以及相关参数
+   * 渲染前再次更新以避免可能出现不同步的问题
+   */
+  public render(): void {
+    this.update(0)
   }
 
   /**

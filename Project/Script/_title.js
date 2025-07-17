@@ -1942,13 +1942,7 @@ Menubar.popupWindowMenu = function (target) {
       click: () => {
         Title.playGame()
       },
-    }/*完成度低，先隐藏*//*, {
-      label: get('log'),
-      enabled: open,
-      click: () => {
-        Window.open('log')
-      },
-    }*/])
+    }])
   }
 }
 
@@ -1969,8 +1963,8 @@ Menubar.popupHelpMenu = function (target) {
       click: () => {
         File.openURL(
           Local.language.slice(0, 2) === 'zh'
-        ? 'https://yamirpg.com/zh/docs/intro'
-        : 'https://yamirpg.com/docs/intro'
+        ? 'https://yami-pro.github.io/zh/docs/intro'
+        : 'https://yami-pro.github.io/docs/intro'
         )
       },
     }, {

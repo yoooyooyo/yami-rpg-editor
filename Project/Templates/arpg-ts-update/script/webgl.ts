@@ -1503,10 +1503,8 @@ let WebGL = new class WebGLBuilder {
       this.resizeLightMap()
     }
 
-    namespace: {
-    const defTint: ImageTint = [0, 0, 0, 0]
-
     // WebGL上下文方法 - 绘制图像
+    const defTint: ImageTint = [0, 0, 0, 0]
     GL.drawImage = function (texture: Texture, dx: number, dy: number, dw: number, dh: number, tint: ImageTint = defTint): void {
       if (!texture.complete) return
 
@@ -1569,7 +1567,6 @@ let WebGL = new class WebGLBuilder {
       this.bufferData(this.ARRAY_BUFFER, vertices, this.STREAM_DRAW, 0, 16)
       this.bindTexture(this.TEXTURE_2D, base.glTexture)
       this.drawArrays(this.TRIANGLE_FAN, 0, 4)
-    }
     }
 
     // WebGL上下文方法 - 绘制指定颜色的图像

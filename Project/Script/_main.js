@@ -7,8 +7,8 @@ const Editor = {
   state: 'closed',
   config: null,
   project: null,
-  latestEditorVersion: '1.0.17',
-  latestProjectVersion: '1.0.130',
+  latestEditorVersion: '1.0.18',
+  latestProjectVersion: '1.0.131',
   // methods
   initialize: null,
   open: null,
@@ -86,6 +86,7 @@ Editor.initialize = async function () {
     ArrayList.initialize()
     AttributeListInterface.initialize()
     ConditionListInterface.initialize()
+    // Workshop.initialize()
 
     // 加载配置文件
     this.loadConfig()

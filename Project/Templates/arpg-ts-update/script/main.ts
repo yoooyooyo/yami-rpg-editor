@@ -62,6 +62,7 @@ let Game = new class GameManager {
       Input,
       Timer,
       Scene,
+      Camera,
       EventManager,
       UI,
       AudioManager,
