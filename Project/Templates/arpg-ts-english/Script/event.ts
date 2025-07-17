@@ -508,7 +508,7 @@ class EventHandler {
     CommandList = this.commands
     CommandIndex = this.index
     // 连续执行指令，直到返回false(中断)
-    while (CommandList[CommandIndex++]()) {}
+    while (CommandList[CommandIndex++]?.()) {}
     // 取回全局变量中的事件属性
     this.commands = CommandList
     this.index = CommandIndex
