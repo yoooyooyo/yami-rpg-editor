@@ -6851,6 +6851,11 @@ node-item.related-event {
 	width: 200px;
 }
 
+#event-script {
+	right: 306px;
+	bottom: 10px;
+}
+
 #event-confirm {
 	right: 206px;
 	bottom: 10px;
