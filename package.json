@@ -8,6 +8,7 @@
 	"scripts": {
 		"start": "electron . --dirname=Project",
 		"setup": "npm install",
+		"format": "prettier --write . --config prettierrc.json",
 		"build:win": "electron-builder --dir --win --x64",
 		"build:linux": "electron-builder --dir --linux --x64",
 		"build:mac": "electron-builder --dir --mac --x64",
@@ -18,7 +19,8 @@
 		"@types/node": "^22.13.10",
 		"archiver": "^7.0.1",
 		"electron": "^20.3.12",
-		"electron-builder": "^25.1.8"
+		"electron-builder": "^25.1.8",
+		"prettier": "^3.6.2"
 	},
 	"dependencies": {
 		"exceljs": "^4.4.0",
