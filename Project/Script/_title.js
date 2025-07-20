@@ -114,7 +114,6 @@ Title.initialize = function () {
 	ipcRenderer.on('unmaximize', this.windowUnmaximize)
 	ipcRenderer.on('enter-full-screen', this.windowEnterFullScreen)
 	ipcRenderer.on('leave-full-screen', this.windowLeaveFullScreen)
-
 	// 初始化子对象
 	NewProject.initialize()
 	Deployment.initialize()

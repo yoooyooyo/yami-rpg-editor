@@ -332,8 +332,8 @@ Editor.quit = function () {
 	this.saveConfig()
 	this.saveProject()
 	this.saveManifest()
-	require('electron').ipcRenderer.send('force-close-window')
 	WebServer.stop()
+	require('electron').ipcRenderer.send('force-close-window')
 }
 
 // 更新路径

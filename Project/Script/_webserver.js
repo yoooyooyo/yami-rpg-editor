@@ -48,6 +48,5 @@ const WebServer = {
 					]
 				)
 			})
-	},
-	toQrCode() {}
+	}
 }

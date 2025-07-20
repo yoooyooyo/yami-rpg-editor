@@ -425,12 +425,11 @@ const createEditorWindow = function () {
 				editor.webContents.setZoomFactor(1)
 			})
 	})
-
 	// 侦听窗口关闭事件
-	editor.on('close', async (event) => {
+	editor.on('close', (event) => {
 		if (!editor.stopCloseEvent) {
 			apkProcessor.abortBuild()
-			await new Promise((r) => stopTSC(r))
+			new Promise((r) => stopTSC(r))
 			editor.send('before-close-window')
 			event.preventDefault()
 			// 如果渲染线程未响应，超时2秒后退出应用
