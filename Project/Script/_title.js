@@ -2004,93 +2004,75 @@ Menubar.popupWindowMenu = function (target) {
           target.removeClass("selected");
         },
       },
-      [
-        {
-          label: get("project"),
-          accelerator: "F1",
-          enabled: open,
-          click: () => {
-            Project.open();
-          },
+      [{
+        label: get('project'),
+        accelerator: 'F1',
+        enabled: open,
+        click: () => {
+          Project.open()
         },
-        {
-          label: get("variable"),
-          accelerator: "F3",
-          enabled: open,
-          click: () => {
-            Variable.open();
-          },
+      }, {
+        label: get('variable'),
+        accelerator: 'F3',
+        enabled: open,
+        click: () => {
+          Variable.open()
         },
-        {
-          label: get("attribute"),
-          accelerator: "F6",
-          enabled: open,
-          click: () => {
-            Attribute.open();
-          },
+      }, {
+        label: get('attribute'),
+        accelerator: 'F6',
+        enabled: open,
+        click: () => {
+          Attribute.open()
         },
-        {
-          label: get("enum"),
-          accelerator: "F7",
-          enabled: open,
-          click: () => {
-            Enum.open();
-          },
+      }, {
+        label: get('enum'),
+        accelerator: 'F7',
+        enabled: open,
+        click: () => {
+          Enum.open()
         },
-        {
-          label: get("local"),
-          accelerator: "F8",
-          enabled: open,
-          click: () => {
-            Localization.open();
-          },
+      }, {
+        label: get('local'),
+        accelerator: 'F8',
+        enabled: open,
+        click: () => {
+          Localization.open()
         },
-        {
-          label: get("easing"),
-          enabled: open,
-          click: () => {
-            Easing.open();
-          },
+      }, {
+        label: get('easing'),
+        enabled: open,
+        click: () => {
+          Easing.open()
         },
-        {
-          label: get("team"),
-          enabled: open,
-          click: () => {
-            Team.open();
-          },
+      }, {
+        label: get('team'),
+        enabled: open,
+        click: () => {
+          Team.open()
         },
-        {
-          label: get("plugin"),
-          accelerator: "F9",
-          enabled: open,
-          click: () => {
-            PluginManager.open();
-          },
+      }, {
+        label: get('plugin'),
+        accelerator: 'F9',
+        enabled: open,
+        click: () => {
+          PluginManager.open()
         },
-        {
-          label: get("command"),
-          accelerator: "F10",
-          enabled: open,
-          click: () => {
-            CustomCommand.open();
-          },
+      }, {
+        label: get('command'),
+        accelerator: 'F10',
+        enabled: open,
+        click: () => {
+          CustomCommand.open()
         },
-        {
-          label: get("run"),
-          accelerator: "F4",
-          enabled: open,
-          click: () => {
-            Title.playGame();
-          },
-        } /*完成度低，先隐藏*/ /*, {
-      label: get('log'),
-      enabled: open,
-      click: () => {
-        Window.open('log')
-      },
-    }*/,
-      ]
-    );
+      }, {
+        label: get('run'),
+        accelerator: 'F4',
+        enabled: open,
+        click: () => {
+          Title.playGame()
+        },
+      }])
   }
 };
 

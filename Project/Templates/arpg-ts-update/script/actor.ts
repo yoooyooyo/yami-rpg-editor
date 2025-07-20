@@ -1722,11 +1722,17 @@ class ActorCollider {
       const distY = Math.abs(sActor.y - dActor.y)
       // 如果角色之间的水平和垂直距离小于最小距离，则发生碰撞
       if (distX < distMin && distY < distMin) {
-        // 体重比值0.5~2映射为0~1的推力
         if (ratio === undefined) {
-          const sWeight = sCollider.weight
-          const dWeight = dCollider.weight
-          ratio = Math.clamp(dWeight * 3 / (sWeight + dWeight) - 1, 0, 1)
+          if (sCollider.immovable) {
+            ratio = 0
+          } else if (dCollider.immovable) {
+            ratio = 1
+          } else {
+            // 体重比值0.5~2映射为0~1的推力
+            const sWeight = sCollider.weight
+            const dWeight = dCollider.weight
+            ratio = Math.clamp(dWeight * 3 / (sWeight + dWeight) - 1, 0, 1)
+          }
         }
         if (distX > distY) {
           // 如果水平距离大于垂直距离，把两个角色从水平方向上分开
@@ -1756,8 +1762,12 @@ class ActorCollider {
           }
         }
         // 设置角色为已移动状态
-        sCollider.moved = true
-        dCollider.moved = true
+        if (ratio !== 0) {
+          sCollider.moved = true
+        }
+        if (ratio !== 1) {
+          dCollider.moved = true
+        }
         // 发送角色碰撞事件
         collide(sActor, dActor)
         collide(dActor, sActor)
@@ -1778,11 +1788,17 @@ class ActorCollider {
         const offset = distMin - dist
         const offsetX = offset / dist * distX
         const offsetY = offset / dist * distY
-        // 体重比值0.5~2映射为0~1的推力
         if (ratio === undefined) {
-          const sWeight = sCollider.weight
-          const dWeight = dCollider.weight
-          ratio = Math.clamp(dWeight * 3 / (sWeight + dWeight) - 1, 0, 1)
+          if (sCollider.immovable) {
+            ratio = 0
+          } else if (dCollider.immovable) {
+            ratio = 1
+          } else {
+            // 体重比值0.5~2映射为0~1的推力
+            const sWeight = sCollider.weight
+            const dWeight = dCollider.weight
+            ratio = Math.clamp(dWeight * 3 / (sWeight + dWeight) - 1, 0, 1)
+          }
         }
         if (offsetX !== 0) {
           // 如果水平距离大于垂直距离，把两个角色从水平方向上分开
@@ -1803,8 +1819,12 @@ class ActorCollider {
           dActor.y += dOffset
         }
         // 设置角色为已移动状态
-        sCollider.moved = true
-        dCollider.moved = true
+        if (ratio !== 0) {
+          sCollider.moved = true
+        }
+        if (ratio !== 1) {
+          dCollider.moved = true
+        }
         // 发送角色碰撞事件
         collide(sActor, dActor)
         collide(dActor, sActor)
@@ -1847,11 +1867,17 @@ class ActorCollider {
             offsetY = offset * Math.sign(ry)
           }
         }
-        // 体重比值0.5~2映射为0~1的推力
         if (ratio === undefined) {
-          const sWeight = sCollider.weight
-          const dWeight = dCollider.weight
-          ratio = Math.clamp(dWeight * 3 / (sWeight + dWeight) - 1, 0, 1)
+          if (sCollider.immovable) {
+            ratio = 0
+          } else if (dCollider.immovable) {
+            ratio = 1
+          } else {
+            // 体重比值0.5~2映射为0~1的推力
+            const sWeight = sCollider.weight
+            const dWeight = dCollider.weight
+            ratio = Math.clamp(dWeight * 3 / (sWeight + dWeight) - 1, 0, 1)
+          }
         }
         if (offsetX !== 0) {
           // 如果水平距离大于垂直距离，把两个角色从水平方向上分开
@@ -1872,8 +1898,12 @@ class ActorCollider {
           dActor.y += dOffset
         }
         // 设置角色为已移动状态
-        sCollider.moved = true
-        dCollider.moved = true
+        if (ratio !== 0) {
+          sCollider.moved = true
+        }
+        if (ratio !== 1) {
+          dCollider.moved = true
+        }
         // 发送角色碰撞事件
         collide(sActor, dActor)
         collide(dActor, sActor)

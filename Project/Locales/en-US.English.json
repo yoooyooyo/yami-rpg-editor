@@ -469,7 +469,7 @@
       "create.particle": "Particle Emitter",
       "create.parallax": "Parallax",
       "create.tilemap": "Tilemap",
-      "toggle": "Toggle",
+      "shiftAll": "Shift All",
       "settings": "Settings"
     },
     "menuUIList": {

@@ -23,8 +23,6 @@ let UI = new class UIManager {
   public eventTarget: UIElement | null = null
   /** 界面事件鼠标悬浮中的元素 */
   public eventHover: UIElement | null = null
-  /** 界面事件触摸中的元素列表 */
-  public touchedTargets: Array<UIElement> = []
   /** 元素管理器 */
   public manager!: UIElementManager
   /** 实体对象管理器 */
@@ -775,13 +773,19 @@ let UI = new class UIManager {
    * @param event 脚本触摸事件
    */
   private touchstart(event: ScriptTouchEvent): void {
-    for (const {screenX, screenY} of event.changedTouches) {
-      const element = UI.getElementAt(screenX, screenY)
-      if (UI.touchedTargets.append(element)) {
-        Input.bubbles.start()
-        element.emit('touchstart', event, true)
-        UI._updateBubbleState(element)
+    for (const touch of event.changedTouches) {
+      const element = UI.getElementAt(touch.screenX, touch.screenY)
+      ScriptTouchEvent.setTarget(event, touch, element === UI.root ? null : element)
+    }
+    for (const copy of ScriptTouchEvent.forEachElement(event)) {
+      if (copy.target instanceof UIElement) {
+        Input.bubbles.push(true)
+        copy.target.emit('touchstart', event, true)
+        Input.bubbles.pop()
       }
+    }
+    if (!ScriptTouchEvent.loadGlobalTouchEvent(event)) {
+      Input.bubbles.stop()
     }
   }
 
@@ -790,10 +794,15 @@ let UI = new class UIManager {
    * @param event 脚本触摸事件
    */
   private touchmove(event: ScriptTouchEvent): void {
-    for (const element of UI.touchedTargets) {
-      Input.bubbles.start()
-      element.emit('touchmove', event, true)
-      UI._updateBubbleState(element)
+    for (const copy of ScriptTouchEvent.forEachElement(event)) {
+      if (copy.target instanceof UIElement) {
+        Input.bubbles.push(true)
+        copy.target.emit('touchmove', event, true)
+        Input.bubbles.pop()
+      }
+    }
+    if (!ScriptTouchEvent.loadGlobalTouchEvent(event)) {
+      Input.bubbles.stop()
     }
   }
 
@@ -802,13 +811,17 @@ let UI = new class UIManager {
    * @param event 脚本触摸事件
    */
   private touchend(event: ScriptTouchEvent): void {
-    if (UI.touchedTargets.length === 0) return
-    for (const element of UI.touchedTargets) {
-      Input.bubbles.start()
-      element.emit('touchend', event, true)
-      UI._updateBubbleState(element)
+    ScriptTouchEvent.deleteChangedTargetTouches(event)
+    for (const copy of ScriptTouchEvent.forEachElement(event)) {
+      if (copy.target instanceof UIElement) {
+        Input.bubbles.push(true)
+        copy.target.emit('touchend', event, true)
+        Input.bubbles.pop()
+      }
     }
-    UI.touchedTargets.length = 0
+    if (!ScriptTouchEvent.loadGlobalTouchEvent(event)) {
+      Input.bubbles.stop()
+    }
   }
 
   /**

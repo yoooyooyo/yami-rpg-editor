@@ -7,8 +7,8 @@ const Editor = {
   state: "closed",
   config: null,
   project: null,
-  latestEditorVersion: "1.0.17",
-  latestProjectVersion: "1.0.130",
+  latestEditorVersion: '1.0.18',
+  latestProjectVersion: '1.0.131',
   // methods
   initialize: null,
   open: null,
@@ -44,48 +44,49 @@ Editor.initialize = async function () {
     delete window.config;
 
     // 初始化组件对象
-    Local.initialize();
-    AudioManager.initialize();
-    Menubar.initialize();
-    Home.initialize();
-    Layout.initialize();
-    Timer.initialize();
-    Scene.initialize();
-    UI.initialize();
-    Animation.initialize();
-    Particle.initialize();
-    Window.initialize();
-    EventEditor.initialize();
-    Inspector.initialize();
-    Command.initialize();
-    Project.initialize();
-    Easing.initialize();
-    Team.initialize();
-    PluginManager.initialize();
-    CustomCommand.initialize();
-    Log.initialize();
-    UpdateLog.initialize();
-    Reference.initialize();
-    Directory.initialize();
-    Browser.initialize();
-    Selector.initialize();
-    Printer.initialize();
-    Color.initialize();
-    Variable.initialize();
-    Attribute.initialize();
-    Enum.initialize();
-    Localization.initialize();
-    ImageClip.initialize();
-    Selection.initialize();
-    Zoom.initialize();
-    Rename.initialize();
-    SetKey.initialize();
-    SetQuantity.initialize();
-    PresetObject.initialize();
-    PresetElement.initialize();
-    ArrayList.initialize();
-    AttributeListInterface.initialize();
-    ConditionListInterface.initialize();
+    Local.initialize()
+    AudioManager.initialize()
+    Menubar.initialize()
+    Home.initialize()
+    Layout.initialize()
+    Timer.initialize()
+    Scene.initialize()
+    UI.initialize()
+    Animation.initialize()
+    Particle.initialize()
+    Window.initialize()
+    EventEditor.initialize()
+    Inspector.initialize()
+    Command.initialize()
+    Project.initialize()
+    Easing.initialize()
+    Team.initialize()
+    PluginManager.initialize()
+    CustomCommand.initialize()
+    Log.initialize()
+    UpdateLog.initialize()
+    Reference.initialize()
+    Directory.initialize()
+    Browser.initialize()
+    Selector.initialize()
+    Printer.initialize()
+    Color.initialize()
+    Variable.initialize()
+    Attribute.initialize()
+    Enum.initialize()
+    Localization.initialize()
+    ImageClip.initialize()
+    Selection.initialize()
+    Zoom.initialize()
+    Rename.initialize()
+    SetKey.initialize()
+    SetQuantity.initialize()
+    PresetObject.initialize()
+    PresetElement.initialize()
+    ArrayList.initialize()
+    AttributeListInterface.initialize()
+    ConditionListInterface.initialize()
+    // Workshop.initialize()
 
     // 加载配置文件
     this.loadConfig();

@@ -1826,184 +1826,202 @@ class ActorCollider {
 				?.call(new ScriptCollisionEvent(sActor, dActor));
 		};
 
-		// 碰撞 - 正方形和正方形
-		const collideSquareAndSquare = (
-			sCollider: ActorCollider,
-			dCollider: ActorCollider,
-			ratio?: number
-		): void => {
-			const sActor = sCollider.actor;
-			const dActor = dCollider.actor;
-			const distMin = sCollider.half + dCollider.half;
-			const distX = Math.abs(sActor.x - dActor.x);
-			const distY = Math.abs(sActor.y - dActor.y);
-			// 如果角色之间的水平和垂直距离小于最小距离，则发生碰撞
-			if (distX < distMin && distY < distMin) {
-				// 体重比值0.5~2映射为0~1的推力
-				if (ratio === undefined) {
-					const sWeight = sCollider.weight;
-					const dWeight = dCollider.weight;
-					ratio = Math.clamp((dWeight * 3) / (sWeight + dWeight) - 1, 0, 1);
-				}
-				if (distX > distY) {
-					// 如果水平距离大于垂直距离，把两个角色从水平方向上分开
-					const offset = distMin - distX + TOLERANCE;
-					const sOffset = offset * ratio;
-					const dOffset = offset - sOffset;
-					// 根据角色左右位置情况进行计算
-					if (sActor.x < dActor.x) {
-						sActor.x -= sOffset;
-						dActor.x += dOffset;
-					} else {
-						sActor.x += sOffset;
-						dActor.x -= dOffset;
-					}
-				} else {
-					// 如果垂直距离大于水平距离，把两个角色从垂直方向上分开
-					const offset = distMin - distY + TOLERANCE;
-					const sOffset = offset * ratio;
-					const dOffset = offset - sOffset;
-					// 根据角色上下位置情况进行计算
-					if (sActor.y < dActor.y) {
-						sActor.y -= sOffset;
-						dActor.y += dOffset;
-					} else {
-						sActor.y += sOffset;
-						dActor.y -= dOffset;
-					}
-				}
-				// 设置角色为已移动状态
-				sCollider.moved = true;
-				dCollider.moved = true;
-				// 发送角色碰撞事件
-				collide(sActor, dActor);
-				collide(dActor, sActor);
-			}
-		};
+    // 碰撞 - 正方形和正方形
+    const collideSquareAndSquare = (sCollider: ActorCollider, dCollider: ActorCollider, ratio?: number): void => {
+      const sActor = sCollider.actor
+      const dActor = dCollider.actor
+      const distMin = sCollider.half + dCollider.half
+      const distX = Math.abs(sActor.x - dActor.x)
+      const distY = Math.abs(sActor.y - dActor.y)
+      // 如果角色之间的水平和垂直距离小于最小距离，则发生碰撞
+      if (distX < distMin && distY < distMin) {
+        if (ratio === undefined) {
+          if (sCollider.immovable) {
+            ratio = 0
+          } else if (dCollider.immovable) {
+            ratio = 1
+          } else {
+            // 体重比值0.5~2映射为0~1的推力
+            const sWeight = sCollider.weight
+            const dWeight = dCollider.weight
+            ratio = Math.clamp(dWeight * 3 / (sWeight + dWeight) - 1, 0, 1)
+          }
+        }
+        if (distX > distY) {
+          // 如果水平距离大于垂直距离，把两个角色从水平方向上分开
+          const offset = distMin - distX + TOLERANCE
+          const sOffset = offset * ratio
+          const dOffset = offset - sOffset
+          // 根据角色左右位置情况进行计算
+          if (sActor.x < dActor.x) {
+            sActor.x -= sOffset
+            dActor.x += dOffset
+          } else {
+            sActor.x += sOffset
+            dActor.x -= dOffset
+          }
+        } else {
+          // 如果垂直距离大于水平距离，把两个角色从垂直方向上分开
+          const offset = distMin - distY + TOLERANCE
+          const sOffset = offset * ratio
+          const dOffset = offset - sOffset
+          // 根据角色上下位置情况进行计算
+          if (sActor.y < dActor.y) {
+            sActor.y -= sOffset
+            dActor.y += dOffset
+          } else {
+            sActor.y += sOffset
+            dActor.y -= dOffset
+          }
+        }
+        // 设置角色为已移动状态
+        if (ratio !== 0) {
+          sCollider.moved = true
+        }
+        if (ratio !== 1) {
+          dCollider.moved = true
+        }
+        // 发送角色碰撞事件
+        collide(sActor, dActor)
+        collide(dActor, sActor)
+      }
+    }
 
-		// 碰撞 - 圆形和圆形
-		const collideCircleAndCircle = (
-			sCollider: ActorCollider,
-			dCollider: ActorCollider,
-			ratio?: number
-		): void => {
-			const sActor = sCollider.actor;
-			const dActor = dCollider.actor;
-			const distMin = sCollider.half + dCollider.half;
-			const distX = dActor.x - sActor.x;
-			const distY = dActor.y - sActor.y;
-			const distSquared = distX ** 2 + distY ** 2;
-			// 如果角色之间的水平和垂直距离小于最小距离，则发生碰撞
-			if (distSquared < distMin ** 2) {
-				const dist = Math.sqrt(distSquared);
-				const offset = distMin - dist;
-				const offsetX = (offset / dist) * distX;
-				const offsetY = (offset / dist) * distY;
-				// 体重比值0.5~2映射为0~1的推力
-				if (ratio === undefined) {
-					const sWeight = sCollider.weight;
-					const dWeight = dCollider.weight;
-					ratio = Math.clamp((dWeight * 3) / (sWeight + dWeight) - 1, 0, 1);
-				}
-				if (offsetX !== 0) {
-					// 如果水平距离大于垂直距离，把两个角色从水平方向上分开
-					const tOffsetX = offsetX + (offsetX > 0 ? TOLERANCE : -TOLERANCE);
-					const sOffset = tOffsetX * ratio;
-					const dOffset = tOffsetX - sOffset;
-					// 根据角色左右位置情况进行计算
-					sActor.x -= sOffset;
-					dActor.x += dOffset;
-				}
-				if (offsetY !== 0) {
-					// 如果垂直距离大于水平距离，把两个角色从垂直方向上分开
-					const tOffsetY = offsetY + (offsetY > 0 ? TOLERANCE : -TOLERANCE);
-					const sOffset = tOffsetY * ratio;
-					const dOffset = tOffsetY - sOffset;
-					// 根据角色上下位置情况进行计算
-					sActor.y -= sOffset;
-					dActor.y += dOffset;
-				}
-				// 设置角色为已移动状态
-				sCollider.moved = true;
-				dCollider.moved = true;
-				// 发送角色碰撞事件
-				collide(sActor, dActor);
-				collide(dActor, sActor);
-			}
-		};
+    // 碰撞 - 圆形和圆形
+    const collideCircleAndCircle = (sCollider: ActorCollider, dCollider: ActorCollider, ratio?: number): void => {
+      const sActor = sCollider.actor
+      const dActor = dCollider.actor
+      const distMin = sCollider.half + dCollider.half
+      const distX = dActor.x - sActor.x
+      const distY = dActor.y - sActor.y
+      const distSquared = distX ** 2 + distY ** 2
+      // 如果角色之间的水平和垂直距离小于最小距离，则发生碰撞
+      if (distSquared < distMin ** 2) {
+        const dist = Math.sqrt(distSquared)
+        const offset = distMin - dist
+        const offsetX = offset / dist * distX
+        const offsetY = offset / dist * distY
+        if (ratio === undefined) {
+          if (sCollider.immovable) {
+            ratio = 0
+          } else if (dCollider.immovable) {
+            ratio = 1
+          } else {
+            // 体重比值0.5~2映射为0~1的推力
+            const sWeight = sCollider.weight
+            const dWeight = dCollider.weight
+            ratio = Math.clamp(dWeight * 3 / (sWeight + dWeight) - 1, 0, 1)
+          }
+        }
+        if (offsetX !== 0) {
+          // 如果水平距离大于垂直距离，把两个角色从水平方向上分开
+          const tOffsetX = offsetX + (offsetX > 0 ? TOLERANCE : -TOLERANCE)
+          const sOffset = tOffsetX * ratio
+          const dOffset = tOffsetX - sOffset
+          // 根据角色左右位置情况进行计算
+          sActor.x -= sOffset
+          dActor.x += dOffset
+        }
+        if (offsetY !== 0) {
+          // 如果垂直距离大于水平距离，把两个角色从垂直方向上分开
+          const tOffsetY = offsetY + (offsetY > 0 ? TOLERANCE : -TOLERANCE)
+          const sOffset = tOffsetY * ratio
+          const dOffset = tOffsetY - sOffset
+          // 根据角色上下位置情况进行计算
+          sActor.y -= sOffset
+          dActor.y += dOffset
+        }
+        // 设置角色为已移动状态
+        if (ratio !== 0) {
+          sCollider.moved = true
+        }
+        if (ratio !== 1) {
+          dCollider.moved = true
+        }
+        // 发送角色碰撞事件
+        collide(sActor, dActor)
+        collide(dActor, sActor)
+      }
+    }
 
-		// 碰撞 - 正方形和圆形
-		const collideSquareAndCircle = (
-			sCollider: ActorCollider,
-			dCollider: ActorCollider,
-			ratio?: number
-		): void => {
-			const sActor = sCollider.actor;
-			const dActor = dCollider.actor;
-			const distMin = dCollider.half;
-			const sx = sActor.x;
-			const sy = sActor.y;
-			const dx = dActor.x;
-			const dy = dActor.y;
-			const sl = sx - sCollider.half;
-			const sr = sx + sCollider.half;
-			const st = sy - sCollider.half;
-			const sb = sy + sCollider.half;
-			const distX = dx - (dx < sl ? sl : dx > sr ? sr : dx);
-			const distY = dy - (dy < st ? st : dy > sb ? sb : dy);
-			const distSquared = distX ** 2 + distY ** 2;
-			// 如果角色之间的水平和垂直距离小于最小距离，则发生碰撞
-			if (distSquared < distMin ** 2) {
-				const dist = Math.sqrt(distSquared);
-				const offset = distMin - dist;
-				let offsetX;
-				let offsetY;
-				if (distX !== 0 && distY !== 0) {
-					offsetX = (offset / distMin) * distX;
-					offsetY = (offset / distMin) * distY;
-				} else {
-					const rx = dx - sx;
-					const ry = dy - sy;
-					if (Math.abs(rx) > Math.abs(ry)) {
-						offsetX = offset * Math.sign(rx);
-						offsetY = 0;
-					} else {
-						offsetX = 0;
-						offsetY = offset * Math.sign(ry);
-					}
-				}
-				// 体重比值0.5~2映射为0~1的推力
-				if (ratio === undefined) {
-					const sWeight = sCollider.weight;
-					const dWeight = dCollider.weight;
-					ratio = Math.clamp((dWeight * 3) / (sWeight + dWeight) - 1, 0, 1);
-				}
-				if (offsetX !== 0) {
-					// 如果水平距离大于垂直距离，把两个角色从水平方向上分开
-					const tOffsetX = offsetX + (offsetX > 0 ? TOLERANCE : -TOLERANCE);
-					const sOffset = tOffsetX * ratio;
-					const dOffset = tOffsetX - sOffset;
-					// 根据角色左右位置情况进行计算
-					sActor.x -= sOffset;
-					dActor.x += dOffset;
-				}
-				if (offsetY !== 0) {
-					// 如果垂直距离大于水平距离，把两个角色从垂直方向上分开
-					const tOffsetY = offsetY + (offsetY > 0 ? TOLERANCE : -TOLERANCE);
-					const sOffset = tOffsetY * ratio;
-					const dOffset = tOffsetY - sOffset;
-					// 根据角色上下位置情况进行计算
-					sActor.y -= sOffset;
-					dActor.y += dOffset;
-				}
-				// 设置角色为已移动状态
-				sCollider.moved = true;
-				dCollider.moved = true;
-				// 发送角色碰撞事件
-				collide(sActor, dActor);
-				collide(dActor, sActor);
-			}
-		};
+    // 碰撞 - 正方形和圆形
+    const collideSquareAndCircle = (sCollider: ActorCollider, dCollider: ActorCollider, ratio?: number): void => {
+      const sActor = sCollider.actor
+      const dActor = dCollider.actor
+      const distMin = dCollider.half
+      const sx = sActor.x
+      const sy = sActor.y
+      const dx = dActor.x
+      const dy = dActor.y
+      const sl = sx - sCollider.half
+      const sr = sx + sCollider.half
+      const st = sy - sCollider.half
+      const sb = sy + sCollider.half
+      const distX = dx - (dx < sl ? sl : dx > sr ? sr : dx)
+      const distY = dy - (dy < st ? st : dy > sb ? sb : dy)
+      const distSquared = distX ** 2 + distY ** 2
+      // 如果角色之间的水平和垂直距离小于最小距离，则发生碰撞
+      if (distSquared < distMin ** 2) {
+        const dist = Math.sqrt(distSquared)
+        const offset = distMin - dist
+        let offsetX
+        let offsetY
+        if (distX !== 0 && distY !== 0) {
+          offsetX = offset / distMin * distX
+          offsetY = offset / distMin * distY
+        } else {
+          const rx = dx - sx
+          const ry = dy - sy
+          if (Math.abs(rx) > Math.abs(ry)) {
+            offsetX = offset * Math.sign(rx)
+            offsetY = 0
+          } else {
+            offsetX = 0
+            offsetY = offset * Math.sign(ry)
+          }
+        }
+        if (ratio === undefined) {
+          if (sCollider.immovable) {
+            ratio = 0
+          } else if (dCollider.immovable) {
+            ratio = 1
+          } else {
+            // 体重比值0.5~2映射为0~1的推力
+            const sWeight = sCollider.weight
+            const dWeight = dCollider.weight
+            ratio = Math.clamp(dWeight * 3 / (sWeight + dWeight) - 1, 0, 1)
+          }
+        }
+        if (offsetX !== 0) {
+          // 如果水平距离大于垂直距离，把两个角色从水平方向上分开
+          const tOffsetX = offsetX + (offsetX > 0 ? TOLERANCE : -TOLERANCE)
+          const sOffset = tOffsetX * ratio
+          const dOffset = tOffsetX - sOffset
+          // 根据角色左右位置情况进行计算
+          sActor.x -= sOffset
+          dActor.x += dOffset
+        }
+        if (offsetY !== 0) {
+          // 如果垂直距离大于水平距离，把两个角色从垂直方向上分开
+          const tOffsetY = offsetY + (offsetY > 0 ? TOLERANCE : -TOLERANCE)
+          const sOffset = tOffsetY * ratio
+          const dOffset = tOffsetY - sOffset
+          // 根据角色上下位置情况进行计算
+          sActor.y -= sOffset
+          dActor.y += dOffset
+        }
+        // 设置角色为已移动状态
+        if (ratio !== 0) {
+          sCollider.moved = true
+        }
+        if (ratio !== 1) {
+          dCollider.moved = true
+        }
+        // 发送角色碰撞事件
+        collide(sActor, dActor)
+        collide(dActor, sActor)
+      }
+    }
 
 		/**
 		 * 处理两个角色的碰撞

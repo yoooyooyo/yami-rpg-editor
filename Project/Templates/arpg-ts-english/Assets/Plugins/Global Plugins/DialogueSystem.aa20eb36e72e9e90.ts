@@ -402,7 +402,7 @@ export default class DialogueSystem implements Script<Plugin> {
    * @param event 键盘事件
    */
   onKeyDown(event: ScriptKeyboardEvent): void {
-    if (event.keyName === this.triggerKey) {
+    if (!Game.paused && event.keyName === this.triggerKey) {
       const actor = this.getActorByKeyboard()
       if (actor && !actor.attributes[this.switchToPreventDialog]) {
         this.setActorAngle(actor)
@@ -416,11 +416,13 @@ export default class DialogueSystem implements Script<Plugin> {
    * @param event 鼠标事件
    */
   onMouseMove(event: ScriptMouseEvent): void {
-    const x = Mouse.sceneX
-    const y = Mouse.sceneY
-    const actor = this.getActorByPosition(x, y)
-    if (this.actor !== actor) {
-      this.actor = actor
+    if (!Game.paused) {
+      const x = Mouse.sceneX
+      const y = Mouse.sceneY
+      const actor = this.getActorByPosition(x, y)
+      if (this.actor !== actor) {
+        this.actor = actor
+      }
     }
   }
 }

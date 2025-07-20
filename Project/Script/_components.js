@@ -4668,6 +4668,8 @@ class CustomBox extends HTMLElement {
     switch (this.type) {
       case 'file':
         return this.updateFile(value)
+      case 'dialog-dir':
+        return this.updateDialogDir(value)
       case 'clip':
         return this.updateClip(value)
       case 'variable':
@@ -4723,6 +4725,23 @@ class CustomBox extends HTMLElement {
     Command.invalid = false
     this.info.textContent = Command.removeTextTags(Command.parseFileName(guid))
     if (Command.invalid) this.info.addClass('invalid')
+  }
+
+  // 更新对话框目录
+  updateDialogDir(path) {
+    this.info.textContent = path
+  }
+
+  // 打开对话框目录
+  openDialogDir(input) {
+    File.showOpenDialog({
+      defaultPath: input.read(),
+      properties: ['openDirectory'],
+    }).then(({filePaths}) => {
+      if (filePaths.length === 1) {
+        input.write(filePaths[0])
+      }
+    })
   }
 
   // 更新图像剪辑信息
@@ -4925,6 +4944,8 @@ class CustomBox extends HTMLElement {
     switch (this.type) {
       case 'file':
         return Selector.open(this)
+      case 'dialog-dir':
+        return this.openDialogDir(this)
       case 'clip':
         return ImageClip.open(this)
       case 'variable':

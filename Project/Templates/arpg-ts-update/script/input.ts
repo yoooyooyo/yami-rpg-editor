@@ -430,7 +430,9 @@ let Mouse = new class MouseManager {
    * @param event 触摸事件
    */
   private touchend(event: TouchEvent): void {
-    Input.emit('touchend', new ScriptTouchEvent(event))
+    const scriptEvent = new ScriptTouchEvent(event)
+    Input.emit('touchend', scriptEvent)
+    ScriptTouchEvent.deleteChangedTargets(scriptEvent)
   }
 
   /**
