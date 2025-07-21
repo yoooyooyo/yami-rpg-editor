@@ -7,7 +7,7 @@
 	"description": "2D Game Editor",
 	"scripts": {
 		"start": "electron . --dirname=Project",
-		"setup": "npm install",
+		"setup": "pnpm install",
 		"format": "prettier --write . --config prettierrc.json",
 		"build:win": "electron-builder --dir --win --x64",
 		"build:linux": "electron-builder --dir --linux --x64",
