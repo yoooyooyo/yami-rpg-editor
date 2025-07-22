@@ -9,3 +9,5 @@ package-lock.json
 extension
 build
 
+/Project/Plugins
+run.bat
