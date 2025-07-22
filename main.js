@@ -430,10 +430,10 @@ const createEditorWindow = function () {
 	// 侦听窗口关闭事件
 	editor.on('close', (event) => {
 		if (!editor.stopCloseEvent) {
-			apkProcessor.abortBuild()
-			new Promise((r) => stopTSC(r))
-			editor.send('before-close-window')
 			event.preventDefault()
+			apkProcessor.abortBuild()
+			await new Promise((r) => stopTSC(r))
+			editor.send('before-close-window')
 			// 如果渲染线程未响应，超时2秒后退出应用
 			setTimeout(() => {
 				if (!editor.stopCloseEvent) {

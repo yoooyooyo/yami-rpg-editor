@@ -10,3 +10,5 @@ pnpm-lock.yaml
 extension
 build
 
+/Project/Plugins
+run.bat
