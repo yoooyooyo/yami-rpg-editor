@@ -428,7 +428,7 @@ const createEditorWindow = function () {
 			})
 	})
 	// 侦听窗口关闭事件
-	editor.on('close', (event) => {
+	editor.on('close', async (event) => {
 		if (!editor.stopCloseEvent) {
 			event.preventDefault()
 			apkProcessor.abortBuild()
